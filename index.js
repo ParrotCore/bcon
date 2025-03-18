@@ -31,15 +31,23 @@ function init({ allowGlobal=false, allowRequire=false, config:{ defaultPath=null
 {
     if(allowGlobal) global.BCON = module.exports;
     if(allowRequire) require.extensions['.bcon'] = (mod, filename) => {
-        const
-            PARSED = parse(
-                read(
-                    filename,
-                    __bconConfig.default_encoding
-                )
-            );
+        try
+        {
+            const
+                PARSED = parse(
+                    read(
+                        filename,
+                        __bconConfig.default_encoding
+                    )
+                );
 
-        mod.exports = PARSED;
+            mod.exports = PARSED;
+        }
+        catch(error)
+        {
+            error.stack += `\n    at: ${filename}`;
+            throw error;
+        }
     };
 
     if(defaultEncoding)

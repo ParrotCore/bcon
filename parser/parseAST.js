@@ -92,15 +92,23 @@ function parseHead (object, parseImport)
                 PATH = EXPRESSION.value.path,
                 ENCODING = EXPRESSION.value.encoding;
 
-            if(!CACHE.has(PATH)) CACHE.set(
-                PATH,
-                parseImport(
-                    read(
-                        PATH,
-                        ENCODING
+            try
+            {
+                if(!CACHE.has(PATH)) CACHE.set(
+                    PATH,
+                    parseImport(
+                        read(
+                            PATH,
+                            ENCODING
+                        )
                     )
                 )
-            )
+            }
+            catch(error)
+            {
+                error.stack += `\n    at: ${PATH}`;
+                throw error;
+            }
 
             value = CACHE.get(PATH);
         }

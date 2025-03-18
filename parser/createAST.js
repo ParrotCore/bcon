@@ -10,7 +10,12 @@ const
      */
 
     unexpectedToken = (string, token, expected) => {
-        throw new SyntaxError(`Unexpected Token: "${(token.original || token.string)}" at ${getTokenLocalization(string, token.index)}.${expected ? ` Expected: ${expected}.` : ''}`)
+        const
+            error = new SyntaxError();
+
+        error.stack = `Unexpected Token: "${(token.original || token.string)}" at ${getTokenLocalization(string, token.index)}.${expected ? ` Expected: ${expected}.` : ''}`;
+
+        throw error;
     },
     
     /**
@@ -22,8 +27,46 @@ const
      */
 
     unexpectedEndOfInput = (string, expected='') => {
-        throw new SyntaxError(`Unexpected end of input at ${getTokenLocalization(string, string.length)}.${expected ? ` Expected: ${expected}.` : ''}`);
-    };
+        const
+            error = new SyntaxError();
+
+        error.stack = `Unexpected end of input at ${getTokenLocalization(string, string.length)}.${expected ? ` Expected: ${expected}.` : ''}`
+        
+        throw error;
+    },
+
+    /**
+     * @function invalidAssignment
+     * @param {string} - BCON code.
+     * @param {index} - Index of currently parsed token.
+     * @description Returns errors "Invalid Assignment".
+     * @returns {void}
+     */
+
+    invalidAssignment = (string, index) => {
+        const
+            error = new SyntaxError();
+
+        error.stack = `Invalid Assignment at ${getTokenLocalization(string, index)}.`;
+
+        throw error;
+    },
+
+    /**
+     * @function notAFile
+     * @param {string} string - Currently parsed string.
+     * @description Returns errors "Cannod import ... as it's not a file.".
+     * @returns {void}
+     */
+    
+    notAFile = (string) => {
+        const
+            error = new TypeError();
+
+        error.stack = `Cannot import "${string}" as it\'s not a file.`
+
+        throw error;
+    }
 
 /**
  * @function destructurizationAST
@@ -75,7 +118,7 @@ function destructurizationAST(string, nextToken, currentPath=[])
                     PATH = nextToken();
 
                 if(!PATH) unexpectedEndOfInput(string,'variable name or "["');
-                if((PATH.type !== 'SYMBOL' || PATH.string !== '[') && PATH.type !== 'VARIABLE-NAME') throw unexpectedToken(string, PATH, 'variable name or "["');
+                if((PATH.type !== 'SYMBOL' || PATH.string !== '[') && PATH.type !== 'VARIABLE-NAME') unexpectedToken(string, PATH, 'variable name or "["');
 
                 if(PATH.string === '[') destructurizationCollection.push(...destructurizationAST(string, nextToken, [...currentPath, KEY.string]));
                 else
@@ -149,7 +192,7 @@ function objectAST (string, nextToken, index)
         if(KEY.type === 'NUMERIC-KEY') item.key = indexCount++;
         else if (KEY.type === 'ASSOC-KEY') item.key = KEY.string;
         else
-            unexpectedToken(string, KEY, 'assoc (@key) or numeric (@*) key.');
+            unexpectedToken(string, KEY, 'assoc (@key) or numeric (@*) key');
 
         if(ASSIGN.type !== 'ASSIGNMENT') unexpectedToken(string, ASSIGN, '"=>"')
         if(!VALUE.type.endsWith('LITERAL') && VALUE.type !== 'VARIABLE-NAME' && VALUE.type !== 'VARIABLE-PATH' && (VALUE.type !== 'SYMBOL' || VALUE.string !== '[')) unexpectedToken(string, VALUE)
@@ -222,7 +265,7 @@ function createAbstractSyntaxTree(string, tokens)
                         AS = nextToken(),
                         KEY = nextToken();
 
-                    if(FILE.type !== 'FILE-LITERAL') throw new TypeError(`Cannot import "${FILE.original || FILE.string}" as it\'s not a file.`)
+                    if(FILE.type !== 'FILE-LITERAL') notAFile(FILE.original || FILE.string);
                     if(AS.type !== 'KEYWORD' && AS.string !== 'as') unexpectedToken(string, AS, '"as" keyword');
 
                     currentExpression.value = FILE;
@@ -244,7 +287,7 @@ function createAbstractSyntaxTree(string, tokens)
                     const
                         VALUE = nextToken();
 
-                    if(!VALUE.type.endsWith('LITERAL') && VALUE.type !== 'VARIABLE-NAME' && VALUE.type !== 'VARIABLE-PATH' && (VALUE.type !== 'SYMBOL' || VALUE.string !== '[')) throw new TypeError('Invalid assignment.');
+                    if(!VALUE.type.endsWith('LITERAL') && VALUE.type !== 'VARIABLE-NAME' && VALUE.type !== 'VARIABLE-PATH' && (VALUE.type !== 'SYMBOL' || VALUE.string !== '[')) invalidAssignment(string, value.index);
 
                     if(VALUE.type === 'SYMBOL' && VALUE.string === '[') currentExpression.value = objectAST(string, nextToken, VALUE.index);
                     else currentExpression.value = VALUE;
@@ -253,8 +296,8 @@ function createAbstractSyntaxTree(string, tokens)
                         AS = nextToken(),
                         KEY = nextToken();
 
-                    if(AS.type !== 'KEYWORD' && AS.string !== 'as') unexpectedToken(string, AS, '"as" keyword.')
-                    if(KEY.type !== 'VARIABLE-NAME' && (KEY.type !== 'SYMBOL' || KEY.string !== '[')) unexpectedToken(string, KEY, 'variable name or "[".');
+                    if(AS.type !== 'KEYWORD' && AS.string !== 'as') unexpectedToken(string, AS, '"as" keyword')
+                    if(KEY.type !== 'VARIABLE-NAME' && (KEY.type !== 'SYMBOL' || KEY.string !== '[')) unexpectedToken(string, KEY, 'variable name or "["');
                     
                     if(KEY.type === 'VARIABLE-NAME') currentExpression.alias = KEY.string;
                     else

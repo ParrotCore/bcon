@@ -89,6 +89,19 @@ const
     } = require('node:path');
 
 /**
+ * @function clearStack
+ * @param {error} error - Error to clear. 
+ * @description Removes stack of an error, then returns back.
+ * @returns {error}
+ */
+function clearStack(error)
+{
+    error.stack = structuredClone(error.message);
+
+    return error;
+}
+
+/**
  * @function remove_comments
  * @param {string} string - BCON Code.
  * @returns {string}
@@ -219,7 +232,7 @@ function checkForUnexpectedTokens(arr, string)
         if(currentIndex < ARRAY[0].index)
         {
             if(/\s/.test(string[currentIndex])) currentIndex++;
-            else throw new SyntaxError(`Unexpected Token: "${string[currentIndex]}" at ${getTokenLocalization(string, currentIndex)}`)
+            else throw clearStack(new SyntaxError(`Unexpected Token: "${string[currentIndex]}" at ${getTokenLocalization(string, currentIndex)}.`))
         }
         else if(currentIndex === ARRAY[0].index)
         {
@@ -275,12 +288,12 @@ function parseLiterals(arr, string)
 
                 LITERAL.encoding = ENCODING;
 
-                if(!Buffer.isEncoding(ENCODING)) throw new Error(`Could not recognize "${ENCODING}" as handled encoding at ${getTokenLocalization(string, literal.index)}`);
+                if(!Buffer.isEncoding(ENCODING)) throw clearStack(new Error(`Could not recognize "${ENCODING}" as handled encoding at ${getTokenLocalization(string, literal.index)}`));
 
                 if(getAbsolutePath(PATH) === PATH) LITERAL.path = PATH;
                 else LITERAL.path = pathJoin(__bconConfig.default_path, PATH)
 
-                if(!exists(LITERAL.path)) throw new Error(`File "${getAbsolutePath(PATH)}" does not exist at ${getTokenLocalization(string, literal.index)}`)
+                if(!exists(LITERAL.path)) throw clearStack(new Error(`File "${getAbsolutePath(PATH)}" does not exist at ${getTokenLocalization(string, literal.index)}`))
 
                 delete LITERAL.value;        
                 break;

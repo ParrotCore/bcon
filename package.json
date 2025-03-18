@@ -1,0 +1,28 @@
+{
+  "name": "bcon-parser",
+  "version": "1.0.0",
+  "description": "Parser for BCON (BCON Configures Only Nicely) language.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node ./test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/parrotcore/bcon-parser.git"
+  },
+  "keywords": [
+    "bcon",
+    "configuration",
+    "config",
+    "parser"
+  ],
+  "author": "parrotcore",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/parrotcore/bcon-parser/issues"
+  },
+  "homepage": "https://github.com/parrotcore/bcon-parser#readme"
+}

@@ -42,7 +42,6 @@ The only thing you need to do is download it from VSC marketplace:
 - RegExps: `/your (expression)+/flags` e.g. `/[abc]+/gi`;
 - Numbers: `0xNN...N`, `0bNN...N`, `Ne+NN`, `Ne-NN`, `.N`, `N.N`, `M`, also negative variants, `-N`, etc.;
 - Keywords: `Undefined`, `Null`, `NaN`, `False`, `True`, `Infinity`;
-- NaN - `NaN`;
 
 ## Data Structures:
 - Dictionaries:
@@ -178,8 +177,8 @@ You can do it using **init** method that is included in module:
 
 ```js
 BCON.init({
-	allowRequire: false // Set to true if you wish to `require()` bcon files.
-	allowGlobal: false // Set to true if you wish to refer to BCON globally [global.BCON].
+	allowRequire: false, // Set to true if you wish to `require()` bcon files.
+	allowGlobal: false, // Set to true if you wish to refer to BCON globally [global.BCON].
 	config: {
 		defaultPath: __dirname, // Set to any path you wish, imports, and require will pick files relatively to given path.
 		defaultEncoding: 'utf-8' // Set to any encoding supported by Node.JS, require will use it to decode files.

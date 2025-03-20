@@ -36,6 +36,7 @@ function parseObject(object, variables)
             if(EXPRESSION.value.type === 'FILE-LITERAL') value = read(EXPRESSION.value.path, EXPRESSION.value.encoding);
             else if(EXPRESSION.value.type.endsWith('LITERAL'))
             {
+                if(EXPRESSION.value.type === 'BIGINT-LITERAL') console.log(EXPRESSION.value.type, EXPRESSION.value.value);
                 value = EXPRESSION.value.value;
 
                 if(EXPRESSION.value.type === 'STRING-LITERAL') value = value

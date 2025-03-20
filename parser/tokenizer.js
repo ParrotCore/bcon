@@ -17,8 +17,12 @@ const
             type: 'REGEXP-LITERAL'
         },
         {
-            matcher: /(?:-)?(0x[A-Fa-f0-9_]+|0b[0-1_]+|[0-9_]*e(\+|\-)[0-9_]+|[0-9_]*\.[0-9_]+|[0-9_]+|Infinity)|NaN/g,
+            matcher: /(?:-)?(0x[A-Fa-f0-9_]+|0x[0-7]+|0b[0-1_]+|[0-9_]*e(\+|\-)[0-9_]+|[0-9_]*\.[0-9_]+|[0-9_]+|Infinity)|NaN/g,
             type: 'NUMBER-LITERAL'
+        },
+        {
+            matcher: /(?:-)?[0-9]+n/g,
+            type: 'BIGINT-LITERAL'
         },
         {
             matcher: /True|False/g,
@@ -300,6 +304,10 @@ function parseLiterals(arr, string)
         
             case 'NUMBER':
                 LITERAL.value = Number(literal.string);
+                break;
+
+            case 'BIGINT':
+                LITERAL.value = BigInt(literal.string.slice(0, -1));
                 break;
 
             case 'NULL':

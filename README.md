@@ -2,7 +2,7 @@
 
 ## Overview
 
-**BCON** is a programming language designed specifically for defining and storing complex project configurations in a human-readable format while retaining the advanced features of programming languages.
+**BCON** is a programming language designed specifically for defining and storing complex project configurations in a human-readable format while retaining the advanced features of programming languages.<br />
 
 ## Key Features
 
@@ -49,14 +49,16 @@ A dedicated BCON syntax highlighter for `VSCode`, created by **yobonez**, is ava
 - **Dates:** `"MM-DD-YYYY, HH:MM:SS.MS".date` (e.g., `"01-01-1970, 12:43:13.773".date`)
 - **Regular Expressions:** `/pattern/flags` (e.g., `/[abc]+/gi`)
 - **Numbers:** Supports all numeric formats from `ES2023`, including:
-  - `0xNN...N`,
-  - `0bNN...N`,
+  - `0xNN...N` [hexadecimal],
+  - `0oNN...N` [octagonal],
+  - `0bNN...N` [binary],
   - `Ne+NN`,
   - `Ne-NN`,
-  - `.N`,
   - `N.N`,
+  - `.N`,
   - `M`,
   - negative numbers (`-N`), etc.
+- **BigInts:** `Nn`, e.g. `99721376669331060n`,
 - **Keywords:**
   - `Undefined`,
   - `Null`,

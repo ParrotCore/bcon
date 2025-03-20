@@ -14,7 +14,7 @@ use
 [
 	@operator => "Metro Warszawskie";
 	@lines => 2;
-	@since => 1995;
+	@since => 1995n;
 	@length => 41.5;
 	@stations => 39;
 ]

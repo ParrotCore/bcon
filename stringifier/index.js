@@ -24,6 +24,10 @@ function stringify_value(value, replacer, space)
         case typeof response === 'number':
             response = response.toString();
             break;
+
+        case typeof response === 'bigint':
+            response = response.toString() + 'n';
+            break;
         
         case typeof response === 'string':
             response = `"${response.replace(/(?<!\\)"/g, '\\"')}"`;

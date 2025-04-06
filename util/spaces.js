@@ -6,7 +6,7 @@
  * @returns {string}
  */
 
-function addSpaces(spaces, nesting)
+function add_spaces(spaces, nesting)
 {
     if(!spaces || !nesting) return '';
     if((typeof spaces !=='string' || !/^\s$/.test(spaces)) && isNaN(spaces)) throw new TypeError('"spaces" argument must be a whitespace character, or a number.');
@@ -26,4 +26,4 @@ function addSpaces(spaces, nesting)
     return str.join('');
 }
 
-module.exports = addSpaces;
+module.exports = add_spaces;

@@ -77,5 +77,8 @@ use "./warsaw_keywords.txt".utf8 as keywords;
 		@cityDefinition => Null;
 	];
 	@index => True;
+	'
+		Greeting will be used in Hello World program.
+	'
 	@greeting => "Welcome to [Main.city], the capital city of [Main.more.capitalCityOf]! Prepare warm jacket for [Main.more.lowestTemperature]℃!";
 ];

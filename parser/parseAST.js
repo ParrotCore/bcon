@@ -22,6 +22,8 @@ function parseObject(object, variables)
     if(!('Main' in variables)) variables.Main = BODY;
     variables.This = BODY;
 
+    if(!('properties' in object)) return [];
+
     for(const EXPRESSION of object.properties)
     {
         const

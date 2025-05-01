@@ -21,7 +21,7 @@ A dedicated BCON syntax highlighter for `VSCode`, created by **yobonez**, is ava
 - **Extension Name:** `BCON Syntax Highlighting`
 - **Download:** [GitHub Repository](https://github.com/yobonez/vscode-bcon-highlighting)
 
-![BKON Icon](./icon.png?raw=true)
+![BKON Icon](https://github.com/ParrotCore/bcon/raw/master/icon.png?raw=true)
 
 ---
 

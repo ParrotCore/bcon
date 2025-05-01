@@ -297,7 +297,7 @@ function parseLiterals(arr, string)
                 if(getAbsolutePath(PATH) === PATH) LITERAL.path = PATH;
                 else LITERAL.path = pathJoin(__bconConfig.default_path, PATH)
 
-                if(!exists(LITERAL.path)) throw clearStack(new Error(`File "${getAbsolutePath(PATH)}" does not exist at ${getTokenLocalization(string, literal.index)}`))
+                if(!exists(LITERAL.path)) throw clearStack(new Error(`File "${LITERAL.path}" does not exist at ${getTokenLocalization(string, literal.index)}`))
 
                 delete LITERAL.value;        
                 break;

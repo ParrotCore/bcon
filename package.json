@@ -15,7 +15,8 @@
   },
   "scripts": {
     "test": "node ./test/tests.js",
-    "performance": "node ./test/performance.js"
+    "performance": "node ./test/performance.js",
+    "compare": "node ./test/comparison.js"
   },
   "repository": {
     "type": "git",

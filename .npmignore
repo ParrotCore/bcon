@@ -1,0 +1,15 @@
+# Development files
+.git
+.gitignore
+.vscode
+.github
+
+# Test files (optional - remove these lines if you want to include tests)
+# test/
+# test-esm.mjs
+# example-esm.mjs
+
+# Documentation (keep in package)
+# README.md
+# LICENSE
+# CHANGELOG.md

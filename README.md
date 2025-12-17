@@ -752,9 +752,9 @@ use [
 ] as items;
 
 export [
-    @first => items[0];
-    @second => items[1];
-    @third => items[2];
+    @first => items.0;
+    @second => items.1;
+    @third => items.2;
 ];
 ```
 
@@ -1134,7 +1134,7 @@ export [
     @database => database;
     @api => [
         @versions => apiVersions;
-        @currentVersion => apiVersions[1];
+        @currentVersion => apiVersions.1;
         @baseUrl => "[Main.server.url][This.currentVersion]";
     ];
     @security => security;

@@ -314,9 +314,6 @@ Variables allow you to define reusable values:
 use "production" as environment;
 use 8080 as port;
 use "0.0.0.0" as host;
-use "production" as environment;
-use 8080 as port;
-use "0.0.0.0" as host;
 
 export [
     @environment => environment;
@@ -1186,6 +1183,7 @@ export [
   @timeout => 30000;
   @compression => True;
 ];
+```
 
 ---
 
@@ -1214,5 +1212,3 @@ Created by **parrotcore**
 **Made with ❤️ by the BCON community**
 
 </div>
-
-

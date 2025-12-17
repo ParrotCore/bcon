@@ -1,6 +1,6 @@
 {
   "name": "bcon-parser",
-  "version": "2.0.1",
+  "version": "2.0.0",
   "description": "Parser for BCON (BCON Configures Only Nicely) language.",
   "main": "index.js",
   "exports": {
@@ -14,7 +14,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node ./test"
+    "test": "node ./test/tests.js",
+    "performance": "node ./test/performance.js"
   },
   "repository": {
     "type": "git",

@@ -401,6 +401,7 @@ Destructuring allows you to extract specific values from dictionaries, arrays, o
 Use `from` to extract specific keys from a dictionary:
 
 ```bcon
+# First, create a variable with a dictionary
 use [
     @username => "alice123";
     @email => "alice@example.com";
@@ -408,7 +409,7 @@ use [
     @role => "admin";
 ] as user;
 
-# Extract specific keys
+# Then, destructure specific keys from it
 use [
     username;
     email;
@@ -426,11 +427,13 @@ export [
 Rename variables during extraction:
 
 ```bcon
+# Create a variable
 use [
     @username => "bob456";
     @age => 35;
 ] as user;
 
+# Destructure with renaming
 use [
     username => userName;  # Rename to 'userName'
     age => userAge;        # Rename to 'userAge'

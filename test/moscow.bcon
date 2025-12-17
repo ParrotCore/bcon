@@ -1,24 +1,20 @@
-import "./cityTypes.bcon".utf8 as
-[
+import [
 	cityType;
-];
+] from "./cityTypes.bcon".utf8;
 
-import "./cityMayors.bcon".utf8 as
-[
+import [
 	moscow => [
         current => mayor;
     ];
-];
+] from "./cityMayors.bcon".utf8;
 
-use
-[
+use [
 	@operator => "Moskovskiy Metropoliten";
 	@lines => 15;
 	@since => 1935;
 	@length => 424.7;
 	@stations => 247;
-]
-as metro;
+] as metro;
 
 use "01-01-1147, 10:00:00.000".date as firstMentioned;
 use "./moscow_keywords.txt".utf8 as keywords;

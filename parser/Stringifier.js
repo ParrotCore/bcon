@@ -13,14 +13,14 @@ class Stringifier {
     }
 
     /**
-     * Główna metoda stringifikacji
+     * Główna metoda stringyfikacji
      */
     stringify(value) {
         if (!this.isObject(value) && !Array.isArray(value)) {
             throw new TypeError('Value must be an object or array');
         }
 
-        return this.stringifyObject(value, 0) + ';';
+        return 'export ' + this.stringifyObject(value, 0) + ';';
     }
 
     /**

@@ -1,9 +1,20 @@
-use "capital" as capital;
-use "capital-of-region" as regionalCapital;
-use "important-city" as importantCity;
-use "city" as city;
-use "town" as town;
-use "country" as country;
+use [
+    @* => "capital";
+    @* => "regional-capital";
+    @* => "important-city";
+    @* => "city";
+    @* => "town";
+    @* => "country";
+] as cityTypes;
+
+use [
+    capital;
+    regionalCapital;
+    importantCity;
+    city;
+    town;
+    country;
+] from cityTypes;
 
 export [
     @* => capital;

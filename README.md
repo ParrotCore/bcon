@@ -352,7 +352,9 @@ export [
 
 Import external BCON files to reuse configurations:
 
-### Basic Import
+### Basic Import (Assignment)
+
+Use `as` to import the entire file content as a single variable:
 
 ```bcon
 # Import entire file content
@@ -365,29 +367,41 @@ export [
 
 ### Import with Destructuring
 
-Extract specific values during import:
+Use `from` to extract specific values during import:
 
 ```bcon
 # database.bcon contains: { host: "localhost", port: 5432, username: "admin" }
-import "./database.bcon".utf8 as [
+import [
     host => dbHost;
     port => dbPort;
-];
+] from "./database.bcon".utf8;
 
 export [
     @host => dbHost;
     @port => dbPort;
 ];
 ```
+
+### Import Syntax Rules
+
+- **`import file as binding;`** - Import entire file content
+- **`import [bindings] from file;`** - Destructure specific values from file
+
+```bcon
+# Import whole file
+import "./config.bcon".utf8 as config;
+
+# Destructure from file
+import [apiKey; timeout] from "./api.bcon".utf8;
 ```
 
 ## Destructuring
 
-Destructuring allows you to extract specific values from dictionaries, arrays, or imported files into separate variables.
+Destructuring allows you to extract specific values from dictionaries, arrays, or variables into separate variables.
 
 ### Dictionary Destructuring
 
-Extract specific keys from a dictionary:
+Use `from` to extract specific keys from a dictionary:
 
 ```bcon
 use [
@@ -398,10 +412,10 @@ use [
 ] as user;
 
 # Extract specific keys
-use user as [
+use [
     username;
     email;
-];
+] from user;
 
 # Now 'username' and 'email' are separate variables
 export [
@@ -420,10 +434,10 @@ use [
     @age => 35;
 ] as user;
 
-use user as [
+use [
     username => userName;  # Rename to 'userName'
     age => userAge;        # Rename to 'userAge'
-];
+] from user;
 
 export [
     @name => userName;
@@ -443,27 +457,45 @@ use [
 ] as words;
 
 # Extract first element
-use words as [
-    first;
-];
+use [first] from words;
 
 # Extract second element (skip first with semicolon)
-use words as [
-    ;
-    second;
-];
+use [; second] from words;
 
-# Extract third element
-use words as [
-    ;
-    ;
-    third;
-];
+# Extract third element (skip first two with semicolons)
+use [; ; third] from words;
 
 export [
     @greeting => "[first] [second] [third]";
 ];
 ```
+
+**Using the `skip` keyword:**
+
+For better readability when skipping multiple elements, use the `skip` keyword:
+
+```bcon
+use [
+    @* => "First";
+    @* => "Second";
+    @* => "Third";
+    @* => "Fourth";
+    @* => "Fifth";
+] as items;
+
+# Skip first three elements, extract fourth
+use [skip; skip; skip; fourth] from items;
+
+# Mix skip with semicolons for single skips
+use [skip; second] from items;
+
+export [
+    @selected => fourth;
+    @other => second;
+];
+```
+
+The `skip` keyword is especially useful when working with large arrays where multiple semicolons would reduce readability.
 
 ### Nested Destructuring
 
@@ -482,7 +514,7 @@ use [
 ] as config;
 
 # Extract nested values
-use config as [
+use [
     database => [
         host;
         credentials => [
@@ -490,7 +522,7 @@ use config as [
             password => dbPass;
         ];
     ];
-];
+] from config;
 
 export [
     @host => host;
@@ -513,16 +545,32 @@ export [
 ];
 
 # File: ./main.bcon
-import "./api-config.bcon".utf8 as [
+import [
     baseUrl;
     apiKey;
-];
+] from "./api-config.bcon".utf8;
 
 export [
     @url => baseUrl;
     @key => apiKey;
 ];
 ```
+
+### Use vs Import
+
+Both `use` and `import` support the same syntax:
+
+- **Assignment with `as`:** Assign entire value to a variable
+  ```bcon
+  use value as variable;
+  import file as variable;
+  ```
+
+- **Destructuring with `from`:** Extract specific values
+  ```bcon
+  use [bindings] from value;
+  import [bindings] from file;
+  ```
 
 ## References
 
@@ -801,17 +849,17 @@ try {
 
 ## `BCON.stringify(value, replacer, space)`
 
-Convert JavaScript value to BCON format string.
+Convert JavaScript value to BCON format string. The output always includes the `export` keyword as required by BCON syntax.
 
 ### Parameters
 
-- **`value`** (Any) - JavaScript value to stringify
-- **`replacer`** (Function|Array|null) - Optional replacer function or array (like JSON.stringify)
+- **`value`** (Any) - JavaScript value to stringify (must be an object or array)
+- **`replacer`** (Function|null) - Optional replacer function for transforming values
 - **`space`** (String|Number|null) - Indentation for formatting (default: 2 spaces)
 
 ### Returns
 
-- (String) - BCON formatted string
+- (String) - BCON formatted string with `export` statement
 
 ### Examples
 
@@ -827,7 +875,7 @@ const data = {
 const bcon = BCON.stringify(data);
 console.log(bcon);
 // Output:
-// [
+// export [
 //   @name => "Alice";
 //   @age => 30;
 //   @active => True;
@@ -842,7 +890,7 @@ const data = { users: ["Alice", "Bob"] };
 const bcon = BCON.stringify(data, null, '\t');
 console.log(bcon);
 // Output (with tabs):
-// [
+// export [
 // 	@users => [
 // 		@* => "Alice";
 // 		@* => "Bob";
@@ -860,7 +908,7 @@ const users = [
 
 console.log(BCON.stringify(users));
 // Output:
-// [
+// export [
 //   @* => [
 //     @username => "alice";
 //     @role => "admin";
@@ -1115,7 +1163,7 @@ console.log(bconString);
 
 // Save to file
 const fs = require('fs');
-fs.writeFileSync('server.bcon', `export ${bconString}`);
+fs.writeFileSync('server.bcon', bconString);
 ```
 
 **Output: `server.bcon`**
@@ -1138,7 +1186,6 @@ export [
   @timeout => 30000;
   @compression => True;
 ];
-```
 
 ---
 

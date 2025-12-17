@@ -112,23 +112,46 @@ class Parser {
      */
     parseImport() {
         this.expect('IMPORT');
-        const file = this.expect('FILE', 'Expected file literal after import');
-        this.expect('AS', 'Expected "as" keyword');
         
-        const binding = this.parseBinding();
-        
-        // Semicolon jest już obsłużony w parseBinding/parseDestructuring
-        // Nie dodajemy kolejnego expect semicolon
-
-        // Przetwórz literał pliku
-        const fileInfo = this.parseFileLiteral(file);
-
-        return {
-            type: 'ImportDeclaration',
-            source: fileInfo,
-            binding,
-            token: file
-        };
+        // Jeśli zaczyna się od [, parsuj najpierw i sprawdź 'as' czy 'from'
+        if (this.check('LBRACKET')) {
+            // Zapamietaj pozycję
+            const startPos = this.pos;
+            
+            // Parsuj jako binding (destrukturyzacja)
+            const possibleBinding = this.parseBinding();
+            
+            if (this.check('FROM')) {
+                // import [ bindings ] from file;
+                this.next(); // skip 'from'
+                const file = this.expect('FILE', 'Expected file literal after from');
+                this.expect('SEMICOLON', 'Expected semicolon after import');
+                
+                const fileInfo = this.parseFileLiteral(file);
+                return {
+                    type: 'ImportDeclaration',
+                    source: fileInfo,
+                    binding: possibleBinding,
+                    token: file
+                };
+            } else {
+                this.error('Expected "from" after [bindings]', this.current());
+            }
+        } else {
+            // import file as binding;
+            const file = this.expect('FILE', 'Expected file literal after import');
+            this.expect('AS', 'Expected "as" after file');
+            const binding = this.parseBinding();
+            this.expect('SEMICOLON', 'Expected semicolon after import');
+            
+            const fileInfo = this.parseFileLiteral(file);
+            return {
+                type: 'ImportDeclaration',
+                source: fileInfo,
+                binding,
+                token: file
+            };
+        }
     }
 
     /**
@@ -136,18 +159,65 @@ class Parser {
      */
     parseUse() {
         this.expect('USE');
-        const value = this.parseValue();
-        this.expect('AS', 'Expected "as" keyword');
         
-        const binding = this.parseBinding();
-        
-        // Semicolon jest już obsłużony w parseBinding/parseDestructuring
-
-        return {
-            type: 'UseDeclaration',
-            value,
-            binding
-        };
+        // Jeśli zaczyna się od [, musimy sprawdzić, czy to destrukturyzacja czy wartość
+        if (this.check('LBRACKET')) {
+            // Zajrzyj do środka, aby określić, czy to destrukturyzacja czy obiekt/tablica
+            const nextToken = this.tokens[this.pos + 1];
+            const isDestructuring = nextToken && 
+                (nextToken.type === 'IDENTIFIER' || nextToken.type === 'LBRACKET' || nextToken.type === 'SEMICOLON');
+            
+            if (isDestructuring) {
+                // Sprawdź jeszcze dokładniej - jeśli ma @key to na pewno wartość, nie destrukturyzacja
+                const hasObjectKeys = nextToken.type === 'ASSOC_KEY' || nextToken.type === 'NUMERIC_KEY';
+                
+                if (!hasObjectKeys) {
+                    // use [ bindings ] from value;
+                    const binding = this.parseBinding();
+                    
+                    if (this.check('FROM')) {
+                        this.next(); // skip 'from'
+                        const value = this.parseValue();
+                        this.expect('SEMICOLON', 'Expected semicolon after use');
+                        
+                        return {
+                            type: 'UseDeclaration',
+                            value,
+                            binding
+                        };
+                    } else if (this.check('AS')) {
+                        // To jednak była wartość - błąd w logice, ale spróbuj obsłużyć
+                        this.error('Cannot use destructuring syntax with "as" keyword', this.current());
+                    } else {
+                        this.error('Expected "from" after bindings', this.current());
+                    }
+                }
+            }
+            
+            // use [value] as binding;
+            const value = this.parseValue();
+            this.expect('AS', 'Expected "as" after value');
+            const binding = this.parseBinding();
+            this.expect('SEMICOLON', 'Expected semicolon after use');
+            
+            return {
+                type: 'UseDeclaration',
+                value,
+                binding
+            };
+        } else {
+            // use value as binding;
+            const value = this.parseValue();
+            this.expect('AS', 'Expected "as" after value');
+            const binding = this.parseBinding();
+            this.expect('SEMICOLON', 'Expected semicolon after use');
+            
+            return {
+                type: 'UseDeclaration',
+                value,
+                binding
+            };
+        }
     }
 
     /**
@@ -158,7 +228,6 @@ class Parser {
         
         if (token.type === 'IDENTIFIER') {
             this.next();
-            this.expect('SEMICOLON', 'Expected semicolon after identifier');
             return {
                 type: 'Identifier',
                 name: token.value
@@ -227,13 +296,17 @@ class Parser {
                 // Pusty element
                 this.next();
                 arrayIndex++;
+            } else if (token.type === 'SKIP') {
+                // Słowo kluczowe 'skip' - pomin element
+                this.next();
+                this.expect('SEMICOLON', 'Expected semicolon after skip');
+                arrayIndex++;
             } else {
-                this.error('Expected identifier, [, or ;', token);
+                this.error('Expected identifier, [, skip, or ;', token);
             }
         }
 
         this.expect('RBRACKET');
-        this.expect('SEMICOLON', 'Expected semicolon after destructuring');
 
         return {
             type: 'Destructuring',

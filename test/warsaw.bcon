@@ -1,24 +1,20 @@
-import "./cityTypes.bcon".utf8 as
-[
+import [
 	cityType;
-];
+] from "./cityTypes.bcon".utf8;
 
-import "./cityMayors.bcon".utf8 as
-[
+import [
 	warsaw => [
         current => mayor;
     ];
-];
+] from "./cityMayors.bcon".utf8;
 
-use
-[
+use [
 	@operator => "Metro Warszawskie";
 	@lines => 2;
 	@since => 1995n;
 	@length => 41.5;
 	@stations => 39;
-]
-as metro;
+] as metro;
 
 use 
 [
@@ -29,8 +25,7 @@ use
     @* => "Royal Castle";
     @* => "Sigismund's Column";
     @* => "Wilanów Palace";
-]
-as monuments;
+] as monuments;
 
 use "01-01-1283, 10:00:00.000".date as firstMentioned;
 use "01-01-1300, 12:25:17.118".date as cityLaws;

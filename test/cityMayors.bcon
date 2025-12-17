@@ -13,4 +13,11 @@ export [
             @term_of_office => "2018-2023";
         ];
     ];
+    @zgierz => [
+        @current => [
+            @name => "Przemysław";
+            @surname => "Staniszewski";
+            @term_of_office => "2018-2026";
+        ];
+    ];
 ];

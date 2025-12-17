@@ -93,7 +93,9 @@ class Lexer {
             { type: 'IMPORT', pattern: /\bimport\b/g },
             { type: 'USE', pattern: /\buse\b/g },
             { type: 'EXPORT', pattern: /\bexport\b/g },
+            { type: 'FROM', pattern: /\bfrom\b/g },
             { type: 'AS', pattern: /\bas\b/g },
+            { type: 'SKIP', pattern: /\bskip\b/g },
             
             // Symbole
             { type: 'ARROW', pattern: /=>/g },

@@ -36,5 +36,8 @@ const
 
 console.log('# Times:\n  ' + TIMES)
 
-console.log('# Output:');
-console.log(require('./warsaw.bcon'))
+console.log('# Output (Warsaw):');
+console.log(require('./warsaw.bcon'));
+
+console.log('\n# Output (Zgierz):');
+console.log(require('./zgierz.bcon'));

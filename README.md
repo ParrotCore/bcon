@@ -57,11 +57,39 @@ A dedicated BCON syntax highlighter for Visual Studio Code is available, created
 npm install bcon-parser
 ```
 
+## Module Support
+
+BCON Parser supports both **CommonJS** and **ES Modules (ESM)**:
+
+### CommonJS (Node.js traditional)
+
+```javascript
+const BCON = require('bcon-parser');
+
+const config = BCON.parse('export "Hello";');
+console.log(config); // "Hello"
+```
+
+### ES Modules (ESM)
+
+```javascript
+import BCON from 'bcon-parser';
+// Or named imports:
+import { parse, stringify, init } from 'bcon-parser';
+
+const config = parse('export "Hello from ESM";');
+console.log(config); // "Hello from ESM"
+```
+
+**Note:** When using ESM, the `allowRequire` option in `init()` is not supported. Use dynamic `import()` or `readFileSync()` instead to load `.bcon` files.
+
 ---
 
 ## Quick Start
 
 ### Basic Usage
+
+**CommonJS:**
 
 ```javascript
 const BCON = require('bcon-parser');
@@ -96,19 +124,66 @@ console.log(config);
 // Output: { environment: 'Production', port: 8080, host: '0.0.0.0', database: { host: 'localhost', port: 5432 } }
 ```
 
-### Requiring BCON Files
-
-When `allowRequire` is enabled, you can directly require `.bcon` files:
+**ES Modules:**
 
 ```javascript
-// config.bcon
-export [
-    @appName => "My Application";
-    @version => "1.0.0";
-];
+import BCON from 'bcon-parser';
+// Or: import { parse, stringify, init } from 'bcon-parser';
 
-// app.js
+// Initialize BCON
+BCON.init({
+    allowGlobal: false,
+    config: {
+        defaultPath: process.cwd(),
+        defaultEncoding: 'utf-8'
+    }
+});
+
+// Parse BCON code
+const config = BCON.parse(`
+    use "Production" as environment;
+    use 8080 as port;
+    
+    export [
+        @environment => environment;
+        @port => port;
+        @host => "0.0.0.0";
+        @database => [
+            @host => "localhost";
+            @port => 5432;
+        ];
+    ];
+`);
+
+console.log(config);
+// Output: { environment: 'Production', port: 8080, host: '0.0.0.0', database: { host: 'localhost', port: 5432 } }
+```
+
+### Requiring BCON Files
+
+**CommonJS:** When `allowRequire` is enabled, you can directly require `.bcon` files:
+
+```javascript
+BCON.init({ allowRequire: true });
+
+// config.bcon:
+// export [
+//     @appName => "My Application";
+//     @version => "1.0.0";
+// ];
+
 const config = require('./config.bcon');
+console.log(config.appName); // "My Application"
+```
+
+**ES Modules:** Use dynamic import with manual parsing:
+
+```javascript
+import { readFileSync } from 'fs';
+import { parse } from 'bcon-parser';
+
+const configContent = readFileSync('./config.bcon', 'utf-8');
+const config = parse(configContent);
 console.log(config.appName); // "My Application"
 ```
 

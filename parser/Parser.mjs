@@ -3,8 +3,8 @@
  * Tworzy AST (Abstract Syntax Tree) z tokenów
  */
 
-const { existsSync, lstatSync } = require('node:fs');
-const { resolve: resolvePath, join: joinPath } = require('node:path');
+import { existsSync, lstatSync } from 'node:fs';
+import { resolve as resolvePath, join as joinPath } from 'node:path';
 
 class Parser {
     constructor(tokens, source, config = {}) {
@@ -558,4 +558,4 @@ class Parser {
     }
 }
 
-module.exports = Parser;
+export default Parser;

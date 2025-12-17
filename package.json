@@ -1,8 +1,15 @@
 {
   "name": "bcon-parser",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Parser for BCON (BCON Configures Only Nicely) language.",
   "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "require": "./index.js"
+    }
+  },
+  "type": "commonjs",
   "directories": {
     "test": "test"
   },
@@ -17,7 +24,9 @@
     "bcon",
     "configuration",
     "config",
-    "parser"
+    "parser",
+    "esm",
+    "commonjs"
   ],
   "author": "parrotcore",
   "license": "MIT",

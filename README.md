@@ -59,9 +59,11 @@ npm install bcon-parser
 
 ## Module Support
 
-BCON Parser supports both **CommonJS** and **ES Modules (ESM)**:
+BCON Parser v1.1.0+ supports both **CommonJS (CJS)** and **ES Modules (ESM)** with full backward compatibility.
 
 ### CommonJS (Node.js traditional)
+
+The traditional Node.js module system using `require()`:
 
 ```javascript
 const BCON = require('bcon-parser');
@@ -70,113 +72,179 @@ const config = BCON.parse('export "Hello";');
 console.log(config); // "Hello"
 ```
 
+**Loading .bcon files with require():**
+
+```javascript
+const BCON = require('bcon-parser');
+
+BCON.init({ allowRequire: true });
+
+// Now you can require .bcon files directly
+const config = require('./config.bcon');
+console.log(config.appName);
+```
+
 ### ES Modules (ESM)
+
+Modern JavaScript module system using `import`:
 
 ```javascript
 import BCON from 'bcon-parser';
-// Or named imports:
+// Or use named imports:
 import { parse, stringify, init } from 'bcon-parser';
 
 const config = parse('export "Hello from ESM";');
 console.log(config); // "Hello from ESM"
 ```
 
-**Note:** When using ESM, the `allowRequire` option in `init()` is not supported. Use dynamic `import()` or `readFileSync()` instead to load `.bcon` files.
+**Loading .bcon files in ESM:**
+
+Since ESM doesn't support custom require extensions, read and parse files manually:
+
+```javascript
+import { readFileSync } from 'fs';
+import { parse } from 'bcon-parser';
+
+const configContent = readFileSync('./config.bcon', 'utf-8');
+const config = parse(configContent);
+console.log(config.appName);
+```
+
+### Choosing Between CJS and ESM
+
+| Feature | CommonJS | ES Modules |
+|---------|----------|------------|
+| **Syntax** | `require()` / `module.exports` | `import` / `export` |
+| **File Extension** | `.js` | `.mjs` or `.js` with `"type": "module"` |
+| **Dynamic Loading** | `require()` works anywhere | `import()` is async |
+| **.bcon Files** | Auto-load with `allowRequire: true` | Manual read + parse |
+| **Compatibility** | Legacy, widely supported | Modern standard |
+| **Performance** | Runtime resolution | Static analysis, tree-shaking |
+
+**Recommendation:** Use ESM for new projects. Both are fully supported and will continue to be maintained.
+
+### Migration from CommonJS to ESM
+
+If you're migrating from CommonJS to ESM:
+
+1. **Change file extensions** to `.mjs` or add `"type": "module"` to `package.json`
+2. **Replace `require()`** with `import`:
+   ```javascript
+   // Before
+   const BCON = require('bcon-parser');
+   
+   // After
+   import BCON from 'bcon-parser';
+   ```
+
+3. **Replace `module.exports`** with `export`:
+   ```javascript
+   // Before
+   module.exports = { myFunction };
+   
+   // After
+   export { myFunction };
+   ```
+
+4. **Handle __dirname and __filename**:
+   ```javascript
+   import { fileURLToPath } from 'url';
+   import { dirname } from 'path';
+   
+   const __filename = fileURLToPath(import.meta.url);
+   const __dirname = dirname(__filename);
+   ```
+
+5. **Load .bcon files manually**:
+   ```javascript
+   import { readFileSync } from 'fs';
+   import { parse } from 'bcon-parser';
+   
+   const config = parse(readFileSync('./config.bcon', 'utf-8'));
+   ```
 
 ---
 
 ## Quick Start
 
-### Basic Usage
+### Basic Example
+
+```javascript
+// CommonJS
+const BCON = require('bcon-parser');
+
+// ES Modules
+import BCON from 'bcon-parser';
+
+// Parse BCON code
+const config = BCON.parse(`
+    use "Production" as environment;
+    use 8080 as port;
+    
+    export [
+        @environment => environment;
+        @port => port;
+        @host => "0.0.0.0";
+        @database => [
+            @host => "localhost";
+            @port => 5432;
+        ];
+    ];
+`);
+
+console.log(config);
+// Output: { environment: 'Production', port: 8080, host: '0.0.0.0', database: { host: 'localhost', port: 5432 } }
+```
+
+### Initialization (Optional)
 
 **CommonJS:**
 
 ```javascript
 const BCON = require('bcon-parser');
 
-// Initialize BCON
 BCON.init({
-    allowRequire: true,
+    allowRequire: true,  // Enable require('./file.bcon')
     allowGlobal: false,
     config: {
         defaultPath: __dirname,
         defaultEncoding: 'utf-8'
     }
 });
-
-// Parse BCON code
-const config = BCON.parse(`
-    use "Production" as environment;
-    use 8080 as port;
-    
-    export [
-        @environment => environment;
-        @port => port;
-        @host => "0.0.0.0";
-        @database => [
-            @host => "localhost";
-            @port => 5432;
-        ];
-    ];
-`);
-
-console.log(config);
-// Output: { environment: 'Production', port: 8080, host: '0.0.0.0', database: { host: 'localhost', port: 5432 } }
 ```
 
 **ES Modules:**
 
 ```javascript
 import BCON from 'bcon-parser';
+```javascript
+import BCON from 'bcon-parser';
 // Or: import { parse, stringify, init } from 'bcon-parser';
 
-// Initialize BCON
 BCON.init({
     allowGlobal: false,
     config: {
-        defaultPath: process.cwd(),
+        defaultPath: process.cwd(),  // Note: use process.cwd() instead of __dirname
         defaultEncoding: 'utf-8'
     }
 });
-
-// Parse BCON code
-const config = BCON.parse(`
-    use "Production" as environment;
-    use 8080 as port;
-    
-    export [
-        @environment => environment;
-        @port => port;
-        @host => "0.0.0.0";
-        @database => [
-            @host => "localhost";
-            @port => 5432;
-        ];
-    ];
-`);
-
-console.log(config);
-// Output: { environment: 'Production', port: 8080, host: '0.0.0.0', database: { host: 'localhost', port: 5432 } }
 ```
 
-### Requiring BCON Files
+### Working with .bcon Files
 
-**CommonJS:** When `allowRequire` is enabled, you can directly require `.bcon` files:
+**CommonJS** - Direct require (recommended):
 
 ```javascript
+const BCON = require('bcon-parser');
+
 BCON.init({ allowRequire: true });
 
-// config.bcon:
-// export [
-//     @appName => "My Application";
-//     @version => "1.0.0";
-// ];
-
+// Now you can require .bcon files directly
 const config = require('./config.bcon');
 console.log(config.appName); // "My Application"
 ```
 
-**ES Modules:** Use dynamic import with manual parsing:
+**ES Modules** - Manual parsing:
 
 ```javascript
 import { readFileSync } from 'fs';

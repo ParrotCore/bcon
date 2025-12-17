@@ -2,6 +2,19 @@
 
 All notable changes to bcon-parser will be documented in this file.
 
+## [2.0.0] - 2025-12-17
+
+### Changed
+- **Consolidated documentation** - Merged ESM migration guide into main README.md
+- **Improved Module Support section** with comparison table and examples
+- **Removed separate documentation files** (ESM-MIGRATION.md, README-PL.md)
+- Cleaned up unused utility files from `/util` folder
+
+### Documentation
+- Enhanced README.md with comprehensive CJS/ESM comparison
+- Added migration guide section directly in README
+- Better structured examples for both module systems
+
 ## [1.1.0] - 2025-12-17
 
 ### Added

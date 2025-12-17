@@ -1,6 +1,5 @@
 const
-    parse = require('./parser'),
-    stringify = require('./stringifier'),
+    { parse, stringify } = require('./parser'),
     
     {
         existsSync: exists,

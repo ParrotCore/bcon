@@ -1,27 +1,134 @@
 # BCON - BCON Configures Only Nicely
 
+<div align="center">
+
+![BCON Icon](https://github.com/ParrotCore/bcon/raw/master/icon.png?raw=true)
+
+**A declarative configuration language designed for clarity, readability, and ease of use**
+
+[![npm version](https://img.shields.io/npm/v/bcon-parser.svg)](https://www.npmjs.com/package/bcon-parser)
+[![license](https://img.shields.io/npm/l/bcon-parser.svg)](https://github.com/parrotcore/bcon-parser/blob/master/LICENSE)
+
+[Features](#key-features) • [Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Examples](#examples)
+
+</div>
+
+---
+
 ## Overview
 
-**BCON** is a programming language designed specifically for defining and storing complex project configurations in a human-readable format while retaining the advanced features of programming languages.<br />
+**BCON** (BCON Configures Only Nicely) is a modern, human-readable configuration language designed specifically for defining complex project configurations with the expressiveness of a programming language without the complexity of arithmetic operations.
+
+Unlike traditional configuration formats, BCON provides:
+- **Rich type system** with native support for dates, regular expressions, and files
+- **Variable system** with imports and references
+- **String interpolation** for dynamic values
+- **Destructuring** for elegant data extraction
+- **Comments** for documentation
+- **Explicit exports** for clarity
+
+BCON is perfect for application configuration files, build systems, deployment scripts, and any scenario where human-readable, maintainable configuration is essential.
 
 ## Key Features
 
-- Simple and intuitive syntax for easy readability and writing
-- Support for single-line and multi-line comments
-- Multi-line strings with interpolation
-- Built-in support for `RegExp`, `Date`, and `File` types
-- Full support for numeric notations as defined in `ES2023`
-- Data structuring using **arrays** and **dictionaries**
-- **No arithmetic operations** – BCON is focused purely on **declarative value definitions**
+- ✨ **Simple and intuitive syntax** - Easy to read and write, even for non-programmers
+- 💬 **Comments support** - Both single-line and multi-line comments
+- 🔤 **Multi-line strings** - With interpolation for dynamic content
+- 📅 **Rich data types** - Native support for `Date`, `RegExp`, `File`, and all ES2023 number formats
+- 🗂️ **Data structures** - Dictionaries (objects) and arrays
+- 📦 **Module system** - Import and reuse configurations from other files
+- 🔗 **Variable references** - Access nested data with dot notation
+- 🎯 **Destructuring** - Extract specific values elegantly
+- 🚫 **No arithmetic** - Purely declarative, focused on value definitions
+- 🎨 **VS Code support** - Syntax highlighting extension available
 
 ## Syntax Highlighting
 
-A dedicated BCON syntax highlighter for `VSCode`, created by **yobonez**, is available.
+A dedicated BCON syntax highlighter for Visual Studio Code is available, created by **yobonez**.
 
-- **Extension Name:** `BCON Syntax Highlighting`
-- **Download:** [GitHub Repository](https://github.com/yobonez/vscode-bcon-highlighting)
+- **Extension Name:** BCON Syntax Highlighting
+- **Repository:** [github.com/yobonez/vscode-bcon-highlighting](https://github.com/yobonez/vscode-bcon-highlighting)
 
-![BKON Icon](https://github.com/ParrotCore/bcon/raw/master/icon.png?raw=true)
+---
+
+## Installation
+
+```bash
+npm install bcon-parser
+```
+
+---
+
+## Quick Start
+
+### Basic Usage
+
+```javascript
+const BCON = require('bcon-parser');
+
+// Initialize BCON
+BCON.init({
+    allowRequire: true,
+    allowGlobal: false,
+    config: {
+        defaultPath: __dirname,
+        defaultEncoding: 'utf-8'
+    }
+});
+
+// Parse BCON code
+const config = BCON.parse(`
+    use "Production" as environment;
+    use 8080 as port;
+    
+    export [
+        @environment => environment;
+        @port => port;
+        @host => "0.0.0.0";
+        @database => [
+            @host => "localhost";
+            @port => 5432;
+        ];
+    ];
+`);
+
+console.log(config);
+// Output: { environment: 'Production', port: 8080, host: '0.0.0.0', database: { host: 'localhost', port: 5432 } }
+```
+
+### Requiring BCON Files
+
+When `allowRequire` is enabled, you can directly require `.bcon` files:
+
+```javascript
+// config.bcon
+export [
+    @appName => "My Application";
+    @version => "1.0.0";
+];
+
+// app.js
+const config = require('./config.bcon');
+console.log(config.appName); // "My Application"
+```
+
+---
+
+## Documentation
+
+### Table of Contents
+
+1. [Syntax Guide](#syntax-guide)
+   - [Comments](#comments)
+   - [Data Types](#data-types)
+   - [Data Structures](#data-structures)
+   - [Variables](#variables)
+   - [Imports](#imports)
+   - [Destructuring](#destructuring)
+   - [References](#references)
+   - [Export Statement](#export-statement)
+2. [API Reference](#api-reference)
+3. [Examples](#examples)
 
 ---
 
@@ -29,257 +136,1036 @@ A dedicated BCON syntax highlighter for `VSCode`, created by **yobonez**, is ava
 
 ## Comments
 
-- **Multi-line comment:**
+BCON supports two types of comments for documenting your configuration:
+
+### Single-line Comments
+
+Use `#` for comments that span a single line:
 
 ```bcon
-'This is a multi-
--line comment.'
+# This is a single-line comment
+use "production" as environment;  # Inline comment
 ```
 
-- **Single-line comment:**
+### Multi-line Comments
+
+Use single quotes `'...'` for multi-line comments:
 
 ```bcon
-# This comment spans only the current line.
+'This is a multi-line comment
+that can span multiple lines.
+Very useful for documentation!'
+
+use "config" as name;
 ```
 
 ## Data Types
 
-- **Files:** `"./path/to/file.extension".encoding` (e.g., `"./keywords.txt".utf8`)
-- **Strings:** `"Your message: [`**Main.users[0].username**`]!"`
-- **Dates:** `"MM-DD-YYYY, HH:MM:SS.MS".date` (e.g., `"01-01-1970, 12:43:13.773".date`)
-- **Regular Expressions:** `/pattern/flags` (e.g., `/[abc]+/gi`)
-- **Numbers:** Supports all numeric formats from `ES2023`, including:
-  - `0xNN...N` [hexadecimal],
-  - `0oNN...N` [octagonal],
-  - `0bNN...N` [binary],
-  - `Ne+NN`,
-  - `Ne-NN`,
-  - `N.N`,
-  - `.N`,
-  - `M`,
-  - negative numbers (`-N`), etc.
-- **BigInts:** `Nn`, e.g. `99721376669331060n`,
-- **Keywords:**
-  - `Undefined`,
-  - `Null`,
-  - `NaN`,
-  - `False`,
-  - `True`,
-  - `Infinity`
+BCON supports a rich set of data types for various configuration needs:
+
+### Strings
+
+Standard double-quoted strings with support for interpolation:
+
+```bcon
+use "World" as target;
+use "Hello, [target]!" as greeting;  # String interpolation
+```
+
+**Multi-line strings** can also be used:
+
+```bcon
+use "This is a
+multi-line
+string value" as description;
+```
+
+### Numbers
+
+Full support for all ES2023 numeric notations:
+
+```bcon
+use 42 as integer;
+use 3.14159 as float;
+use .5 as decimal;
+use 1e+10 as scientific;
+use 1e-5 as smallScientific;
+use 0xFF00CC as hexadecimal;  # 16711884
+use 0o755 as octal;            # 493
+use 0b1010 as binary;          # 10
+use -273.15 as negative;
+```
+
+### BigInt
+
+For arbitrarily large integers:
+
+```bcon
+use 99721376669331060n as bigNumber;
+use 9007199254740991n as maxSafeInt;
+```
+
+### Boolean
+
+```bcon
+use True as isEnabled;
+use False as isDisabled;
+```
+
+### Special Values
+
+```bcon
+use Null as empty;
+use Undefined as notSet;
+use NaN as notANumber;
+use Infinity as unlimited;
+```
+
+### Regular Expressions
+
+Native regex support with flags:
+
+```bcon
+use /^[a-zA-Z]+$/i as namePattern;
+use /\d{3}-\d{3}-\d{4}/ as phonePattern;
+use /^[\p{Script=Latin}\p{P}]+$/u as unicodePattern;
+```
+
+### Dates
+
+Parse dates from string format:
+
+```bcon
+# Format: "MM-DD-YYYY, HH:MM:SS.MS".date
+use "01-01-2025, 12:00:00.000".date as newYear;
+use "12-31-1999, 23:59:59.999".date as y2k;
+```
+
+### Files
+
+Load external file content with specified encoding:
+
+```bcon
+use "./config.json".utf8 as jsonConfig;
+use "./logo.png".binary as logo;
+use "./data.txt".ascii as textData;
+```
+
+Supported encodings: `utf8`, `ascii`, `binary`, `base64`, `hex`, `latin1`, `utf16le`, etc.
 
 ## Data Structures
 
-- **Dictionaries:**
+BCON provides two primary data structures:
+
+### Dictionaries (Objects)
+
+Dictionaries use the `@key => value` syntax:
 
 ```bcon
-[
-	@key => value;
+export [
+    @name => "John Doe";
+    @age => 30;
+    @email => "john@example.com";
+    @address => [
+        @city => "New York";
+        @zip => "10001";
+    ];
 ];
 ```
 
-- **Arrays:**
+### Arrays
+
+Arrays use the `@*` syntax for items:
 
 ```bcon
-[
-	@* => value;
+export [
+    @* => "First item";
+    @* => "Second item";
+    @* => "Third item";
 ];
 ```
 
-## Expressions
+### Mixed Structures
 
-### Importing Files
+You can nest dictionaries and arrays:
 
 ```bcon
-# Import data from a BCON file and store it as a variable.
-import "./path/to/file.bcon".utf8 as IDENTIFIER;
+export [
+    @users => [
+        @* => [
+            @name => "Alice";
+            @role => "Admin";
+        ];
+        @* => [
+            @name => "Bob";
+            @role => "User";
+        ];
+    ];
+];
 ```
 
-### Defining Variables
+## Variables
+
+Variables allow you to define reusable values:
+
+### Basic Variable Assignment
 
 ```bcon
-# Assign a value to a variable.
-use 0xFF00CC as color;
+use "production" as environment;
+use 8080 as port;
+use "0.0.0.0" as host;
+use "production" as environment;
+use 8080 as port;
+use "0.0.0.0" as host;
 
-# Assign dictionaries or arrays:
+export [
+    @environment => environment;
+    @port => port;
+    @host => host;
+];
+```
+
+### Complex Variable Values
+
+Variables can hold any BCON value, including dictionaries and arrays:
+
+```bcon
 use [
-	@key => "Hello";
-] as dictionary;
+    @host => "localhost";
+    @port => 5432;
+    @username => "admin";
+] as database;
 
 use [
-	@* => "World!";
-] as array;
+    @* => "read";
+    @* => "write";
+    @* => "delete";
+] as permissions;
+
+export [
+    @database => database;
+    @permissions => permissions;
+];
+```
+
+## Imports
+
+Import external BCON files to reuse configurations:
+
+### Basic Import
+
+```bcon
+# Import entire file content
+import "./database.bcon".utf8 as dbConfig;
+
+export [
+    @database => dbConfig;
+];
+```
+
+### Import with Destructuring
+
+Extract specific values during import:
+
+```bcon
+# database.bcon contains: { host: "localhost", port: 5432, username: "admin" }
+import "./database.bcon".utf8 as [
+    host => dbHost;
+    port => dbPort;
+];
+
+export [
+    @host => dbHost;
+    @port => dbPort;
+];
+```
 ```
 
 ## Destructuring
 
-Destructuring allows extracting specific values from dictionaries, arrays, or imported files.
+Destructuring allows you to extract specific values from dictionaries, arrays, or imported files into separate variables.
 
 ### Dictionary Destructuring
 
+Extract specific keys from a dictionary:
+
 ```bcon
 use [
-	@username => "LenaKrukov1997";
-	@age => 22;
+    @username => "alice123";
+    @email => "alice@example.com";
+    @age => 28;
+    @role => "admin";
 ] as user;
 
-# Extract the "age" key into a separate variable.
+# Extract specific keys
 use user as [
-	age;
+    username;
+    email;
 ];
 
-# Assign "age" to an alias variable.
+# Now 'username' and 'email' are separate variables
+export [
+    @username => username;
+    @email => email;
+];
+```
+
+### Dictionary Destructuring with Aliases
+
+Rename variables during extraction:
+
+```bcon
+use [
+    @username => "bob456";
+    @age => 35;
+] as user;
+
 use user as [
-	age => ALIAS;
+    username => userName;  # Rename to 'userName'
+    age => userAge;        # Rename to 'userAge'
+];
+
+export [
+    @name => userName;
+    @age => userAge;
 ];
 ```
 
 ### Array Destructuring
 
+Extract specific elements from arrays:
+
 ```bcon
 use [
-	@* => "Hello";
-	@* => "World!";
-] as hello_world;
+    @* => "Hello";
+    @* => "Beautiful";
+    @* => "World";
+] as words;
 
-# Extract the first element into a variable.
-use hello_world as [
-	hello;
+# Extract first element
+use words as [
+    first;
 ];
 
-# Extract the second element into a separate variable.
-use hello_world as [
-	;
-	world;
+# Extract second element (skip first with semicolon)
+use words as [
+    ;
+    second;
+];
+
+# Extract third element
+use words as [
+    ;
+    ;
+    third;
+];
+
+export [
+    @greeting => "[first] [second] [third]";
 ];
 ```
 
-### File Import Destructuring
+### Nested Destructuring
+
+Work with nested structures:
 
 ```bcon
-# Example content of "./db-config.bcon":
-[
-	@hash => "SHA-256";
-	@ip_address => 127.0.0.1;
-	@users => [
-		@* => [
-			@username => "root";
-			@password => "PsswdHR1234!";
-		];
-	];
+use [
+    @database => [
+        @host => "localhost";
+        @port => 5432;
+        @credentials => [
+            @username => "admin";
+            @password => "secret";
+        ];
+    ];
+] as config;
+
+# Extract nested values
+use config as [
+    database => [
+        host;
+        credentials => [
+            username => dbUser;
+            password => dbPass;
+        ];
+    ];
 ];
 
-# Example content of "./config.bcon":
-import "./db-config.bcon".utf8 as [
-	users => [
-		[
-			username => ADMIN_USERNAME;
-			password => ADMIN_PASSWORD;
-		];
-	];
+export [
+    @host => host;
+    @user => dbUser;
+    @pass => dbPass;
 ];
 ```
 
-## Variable References
+### Import with Destructuring
 
-- **BCON is case-sensitive** (`IDENTIFIER` ≠ `Identifier`).
-- Access dictionary/array elements: `dictionary.key1`, `dictionary[0].key1`, etc.
-- The `Main` object contains the **entire parsed configuration**.
-- The `This` object represents the **currently parsed section**.
-- String interpolation allows embedding values: `"Hello, [Main.user.username]!"`.
+Extract values directly during file import:
+
+```bcon
+# File: ./api-config.bcon
+export [
+    @baseUrl => "https://api.example.com";
+    @timeout => 5000;
+    @apiKey => "secret-key-123";
+    @version => "v2";
+];
+
+# File: ./main.bcon
+import "./api-config.bcon".utf8 as [
+    baseUrl;
+    apiKey;
+];
+
+export [
+    @url => baseUrl;
+    @key => apiKey;
+];
+```
+
+## References
+
+BCON provides powerful reference capabilities for accessing nested data:
+
+### Variable References
+
+- **Case-sensitive:** `IDENTIFIER` is different from `Identifier`
+- **Dot notation:** Access nested properties using dots
+
+```bcon
+use [
+    @server => [
+        @host => "localhost";
+        @port => 8080;
+    ];
+    @database => [
+        @host => "db.local";
+        @port => 5432;
+    ];
+] as config;
+
+export [
+    @serverHost => config.server.host;
+    @dbHost => config.database.host;
+];
+```
+
+### Array Element Access
+
+```bcon
+use [
+    @* => "First";
+    @* => "Second";
+    @* => "Third";
+] as items;
+
+export [
+    @first => items[0];
+    @second => items[1];
+    @third => items[2];
+];
+```
+
+### The `Main` Object
+
+The `Main` object contains the entire parsed configuration and can be referenced from anywhere:
+
+```bcon
+use "MyApp" as appName;
+use "1.0.0" as version;
+
+export [
+    @app => [
+        @name => appName;
+        @version => version;
+    ];
+    @welcome => "Welcome to [Main.app.name] v[Main.app.version]!";
+    @greeting => "Hello from [Main.app.name]!";
+];
+```
+
+### The `This` Object
+
+The `This` object represents the currently parsed section (scope):
+
+```bcon
+export [
+    @user => [
+        @firstName => "John";
+        @lastName => "Doe";
+        @fullName => "[This.firstName] [This.lastName]";
+    ];
+    @admin => [
+        @firstName => "Jane";
+        @lastName => "Smith";
+        @fullName => "[This.firstName] [This.lastName]";
+    ];
+];
+```
+
+### String Interpolation
+
+Embed variable and property references in strings using square brackets:
+
+```bcon
+use "Alice" as userName;
+use "developer" as role;
+
+export [
+    @message => "User [userName] has role [role]";
+    @user => [
+        @name => userName;
+        @role => role;
+        @bio => "[This.name] is a [This.role]";
+    ];
+    @greeting => "Welcome, [Main.user.name]!";
+];
+```
+
+## Export Statement
+
+**The `export` statement is required** in every BCON file (introduced in BCON 2.0).
+
+### Why Export?
+
+The `export` keyword:
+- Makes code intent **explicit** and **clear**
+- Improves **readability** by showing what's returned
+- Provides **flexibility** - export objects, arrays, variables, or literals
+- Aligns with **modern JavaScript** ES6 module syntax
+
+### Export Syntax
+
+```bcon
+export value;
+```
+
+Where `value` can be:
+- A dictionary (object)
+- An array
+- A variable
+- A literal value
+
+### Export Examples
+
+**Export an object:**
+
+```bcon
+use "John Doe" as author;
+
+export [
+    @title => "My Document";
+    @author => author;
+    @year => 2025;
+];
+```
+
+**Export an array:**
+
+```bcon
+export [
+    @* => "red";
+    @* => "green";
+    @* => "blue";
+];
+```
+
+**Export a variable:**
+
+```bcon
+use [
+    @name => "Config";
+    @version => "1.0.0";
+] as config;
+
+export config;
+```
+
+**Export a literal:**
+
+```bcon
+export "Hello, World!";
+```
+
+### Export Rules
+
+- ✅ Every BCON file **must** contain an `export` statement
+- ✅ `export` can export any value type
+- ✅ `export` must be the **last statement** in the file
+- ❌ Files without `export` will cause a syntax error
 
 ---
 
-# BCON Parser
+# API Reference
 
-## Installation & Setup
+## Module Exports
 
-Once you install `bcon-parser`, initialize it as follows:
+The `bcon-parser` module exports the following methods:
 
-```js
+```javascript
 const BCON = require('bcon-parser');
 
-console.log(Object.keys(BCON)); // ["parse", "stringify", "init"]
+console.log(Object.keys(BCON)); 
+// Output: ["parse", "stringify", "init", "config"]
 ```
 
-Initialize the parser with custom settings:
+## `BCON.init(options)`
 
-```js
+Initialize BCON with custom configuration.
+
+### Parameters
+
+- **`options`** (Object) - Configuration options
+  - **`allowGlobal`** (Boolean) - Make BCON accessible globally as `global.BCON` (default: `false`)
+  - **`allowRequire`** (Boolean) - Enable `require()` for `.bcon` files (default: `false`)
+  - **`config`** (Object) - Configuration settings
+    - **`defaultPath`** (String) - Base path for imports and requires (default: `__dirname`)
+    - **`defaultEncoding`** (String) - Default file encoding (default: `'utf-8'`)
+
+### Example
+
+```javascript
 BCON.init({
-	allowRequire: false, // Enable if you want to `require()` BCON files.
-	allowGlobal: false, // Enable if you want BCON to be accessible globally.
-	config: {
-		defaultPath: __dirname, // Base path for imports and requires.
-		defaultEncoding: 'utf-8' // Encoding used for file imports.
-	}
+    allowGlobal: true,
+    allowRequire: true,
+    config: {
+        defaultPath: __dirname,
+        defaultEncoding: 'utf-8'
+    }
 });
 ```
 
-## Parsing BCON Files
+### Using `allowRequire`
 
-Parsing BCON is as simple as using JSON in Node.js:
+When enabled, you can directly require `.bcon` files:
 
-```js
-BCON.parse(`
-use "v3.0.0" as version;
+```javascript
+BCON.init({ allowRequire: true });
 
-use [
-	@privateKey => "./private.key".bin;
-	@publicKey => "./public.key".bin;
-] as keys;
+const config = require('./config.bcon');
+console.log(config);
+```
 
-import "./database.bcon".utf8 as [
-	host => dbHost;
-	port => dbPort;
-];
+### Using `allowGlobal`
 
-[
-	@version => version;
-	@admin => [
-		@username => "root";
-		@password => "Q@wertyuiop";
-	];
-	@keys => keys;
-	@greeting => "Hello, [Main.admin.username]! The server is running on [dbHost]:[dbPort], its version is [version].";
-	@database => [
-		@host => dbHost;
-		@port => dbPort;
-		@username => Main.admin.username;
-		@password => Main.admin.password;
-	];
-	@localhostDirectory => "./views";
-	@maxPasswordLength => 128;
-	@passwordRegex => /[^a-zA-Z0-9!@#$%^&*(){}\[\];"'\/\\.,]/g;
-];
+When enabled, BCON is accessible globally:
+
+```javascript
+BCON.init({ allowGlobal: true });
+
+// Now accessible anywhere
+const result = BCON.parse('export "Hello";');
+```
+
+## `BCON.parse(code)`
+
+Parse BCON code string into JavaScript object.
+
+### Parameters
+
+- **`code`** (String) - BCON code to parse
+
+### Returns
+
+- (Any) - Parsed JavaScript value (object, array, string, number, etc.)
+
+### Example
+
+```javascript
+const config = BCON.parse(`
+    use "localhost" as host;
+    use 3000 as port;
+    
+    export [
+        @host => host;
+        @port => port;
+        @url => "http://[host]:[port]";
+    ];
 `);
+
+console.log(config);
+// Output: { host: 'localhost', port: 3000, url: 'http://localhost:3000' }
 ```
 
-## Stringifying JavaScript Objects
+### Error Handling
 
-Convert JavaScript objects to BCON format:
-
-```js
-BCON.stringify([
-	{
-		username: "JohnDoe",
-		age: 24,
-		email: "john.doe@example.com",
-		password: "password",
-		favRegexp: /[abc]+/
-	},
-], null, '\t');
+```javascript
+try {
+    const result = BCON.parse(bconCode);
+    console.log(result);
+} catch (error) {
+    console.error('Parse error:', error.message);
+}
 ```
 
-This results in:
+## `BCON.stringify(value, replacer, space)`
+
+Convert JavaScript value to BCON format string.
+
+### Parameters
+
+- **`value`** (Any) - JavaScript value to stringify
+- **`replacer`** (Function|Array|null) - Optional replacer function or array (like JSON.stringify)
+- **`space`** (String|Number|null) - Indentation for formatting (default: 2 spaces)
+
+### Returns
+
+- (String) - BCON formatted string
+
+### Examples
+
+**Basic stringify:**
+
+```javascript
+const data = {
+    name: "Alice",
+    age: 30,
+    active: true
+};
+
+const bcon = BCON.stringify(data);
+console.log(bcon);
+// Output:
+// [
+//   @name => "Alice";
+//   @age => 30;
+//   @active => True;
+// ];
+```
+
+**With custom indentation:**
+
+```javascript
+const data = { users: ["Alice", "Bob"] };
+
+const bcon = BCON.stringify(data, null, '\t');
+console.log(bcon);
+// Output (with tabs):
+// [
+// 	@users => [
+// 		@* => "Alice";
+// 		@* => "Bob";
+// 	];
+// ];
+```
+
+**Stringify array:**
+
+```javascript
+const users = [
+    { username: "alice", role: "admin" },
+    { username: "bob", role: "user" }
+];
+
+console.log(BCON.stringify(users));
+// Output:
+// [
+//   @* => [
+//     @username => "alice";
+//     @role => "admin";
+//   ];
+//   @* => [
+//     @username => "bob";
+//     @role => "user";
+//   ];
+// ];
+```
+
+## `BCON.config`
+
+Access the current BCON configuration:
+
+```javascript
+console.log(BCON.config);
+// Output:
+// {
+//   default_path: '/path/to/project',
+//   default_encoding: 'utf-8'
+// }
+```
+
+---
+
+# Examples
+
+## Complete Configuration File
+
+**File: `app.bcon`**
 
 ```bcon
-[
-	@* => [
-		@username => "JohnDoe";
-		@age => 24;
-		@email => "john.doe@example.com";
-		@password => "password";
-		@favRegexp => /[abc]+/;
-	];
+'Application Configuration
+Main configuration file for the web application'
+
+use "MyWebApp" as appName;
+use "1.2.3" as version;
+use "production" as environment;
+
+use [
+    @host => "localhost";
+    @port => 5432;
+    @username => "dbuser";
+    @password => "securepass123";
+    @database => "myapp_db";
+] as database;
+
+use [
+    @* => "/api/v1";
+    @* => "/api/v2";
+] as apiVersions;
+
+use [
+    @jwt => [
+        @secret => "jwt-secret-key-here";
+        @expiresIn => "24h";
+    ];
+    @session => [
+        @secret => "session-secret-key";
+        @maxAge => 86400000;
+    ];
+] as security;
+
+use "12-25-2025, 00:00:00.000".date as maintenanceStart;
+
+export [
+    @app => [
+        @name => appName;
+        @version => version;
+        @environment => environment;
+        @description => "[appName] v[version] running in [environment] mode";
+    ];
+    @server => [
+        @host => "0.0.0.0";
+        @port => 8080;
+        @protocol => "http";
+        @url => "[Main.server.protocol]://[Main.server.host]:[Main.server.port]";
+    ];
+    @database => database;
+    @api => [
+        @versions => apiVersions;
+        @currentVersion => apiVersions[1];
+        @baseUrl => "[Main.server.url][This.currentVersion]";
+    ];
+    @security => security;
+    @maintenance => [
+        @scheduled => maintenanceStart;
+        @message => "Maintenance scheduled for [This.scheduled]";
+    ];
+    @features => [
+        @authentication => True;
+        @rateLimit => True;
+        @caching => False;
+        @logging => True;
+    ];
 ];
 ```
+
+**Usage in Node.js:**
+
+```javascript
+const BCON = require('bcon-parser');
+
+BCON.init({
+    allowRequire: true,
+    config: { defaultPath: __dirname }
+});
+
+const config = require('./app.bcon');
+
+console.log(config.app.name);           // "MyWebApp"
+console.log(config.server.url);         // "http://0.0.0.0:8080"
+console.log(config.api.baseUrl);        // "http://0.0.0.0:8080/api/v2"
+console.log(config.database.host);      // "localhost"
+console.log(config.features.caching);   // false
+```
+
+## Multi-File Configuration
+
+**File: `database.bcon`**
+
+```bcon
+export [
+    @host => "db.production.com";
+    @port => 5432;
+    @credentials => [
+        @username => "admin";
+        @password => "prod_password_123";
+    ];
+    @ssl => True;
+    @poolSize => 20;
+];
+```
+
+**File: `api.bcon`**
+
+```bcon
+import "./database.bcon".utf8 as dbConfig;
+
+use [
+    @* => "read";
+    @* => "write";
+    @* => "delete";
+] as permissions;
+
+export [
+    @database => dbConfig;
+    @permissions => permissions;
+    @endpoints => [
+        @users => "/api/users";
+        @posts => "/api/posts";
+        @comments => "/api/comments";
+    ];
+    @rateLimit => [
+        @maxRequests => 100;
+        @windowMs => 900000;
+    ];
+];
+```
+
+**Usage:**
+
+```javascript
+const BCON = require('bcon-parser');
+const { readFileSync } = require('fs');
+
+BCON.init({ config: { defaultPath: __dirname } });
+
+const apiConfig = BCON.parse(readFileSync('./api.bcon', 'utf-8'));
+
+console.log(apiConfig.database.host);      // "db.production.com"
+console.log(apiConfig.permissions[0]);     // "read"
+console.log(apiConfig.endpoints.users);    // "/api/users"
+```
+
+## Working with Complex Data
+
+```bcon
+use /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ as emailRegex;
+use /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/ as passwordRegex;
+
+use "01-01-2024, 00:00:00.000".date as serviceStartDate;
+use "./terms.txt".utf8 as termsOfService;
+use "./logo.png".base64 as appLogo;
+
+use [
+    @* => [
+        @name => "Alice Johnson";
+        @email => "alice@example.com";
+        @role => "Administrator";
+        @since => "03-15-2023, 09:00:00.000".date;
+    ];
+    @* => [
+        @name => "Bob Smith";
+        @email => "bob@example.com";
+        @role => "Developer";
+        @since => "06-20-2023, 10:30:00.000".date;
+    ];
+] as users;
+
+export [
+    @validation => [
+        @email => emailRegex;
+        @password => passwordRegex;
+    ];
+    @service => [
+        @startDate => serviceStartDate;
+        @uptime => Infinity;
+    ];
+    @users => users;
+    @assets => [
+        @logo => appLogo;
+        @terms => termsOfService;
+    ];
+    @stats => [
+        @totalUsers => 1e+6;
+        @activeUsers => 750000;
+        @storageUsed => 5.8e+12;
+        @maxStorage => 1e+15;
+    ];
+];
+```
+
+## Converting JavaScript to BCON
+
+```javascript
+const BCON = require('bcon-parser');
+
+// JavaScript object
+const serverConfig = {
+    name: "Production Server",
+    host: "192.168.1.100",
+    port: 443,
+    ssl: true,
+    certificates: {
+        key: "./private.key",
+        cert: "./certificate.crt"
+    },
+    allowedOrigins: [
+        "https://example.com",
+        "https://www.example.com"
+    ],
+    maxConnections: 1000,
+    timeout: 30000,
+    compression: true
+};
+
+// Convert to BCON
+const bconString = BCON.stringify(serverConfig, null, 2);
+console.log(bconString);
+
+// Save to file
+const fs = require('fs');
+fs.writeFileSync('server.bcon', `export ${bconString}`);
+```
+
+**Output: `server.bcon`**
+
+```bcon
+export [
+  @name => "Production Server";
+  @host => "192.168.1.100";
+  @port => 443;
+  @ssl => True;
+  @certificates => [
+    @key => "./private.key";
+    @cert => "./certificate.crt";
+  ];
+  @allowedOrigins => [
+    @* => "https://example.com";
+    @* => "https://www.example.com";
+  ];
+  @maxConnections => 1000;
+  @timeout => 30000;
+  @compression => True;
+];
+```
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests to the [GitHub repository](https://github.com/parrotcore/bcon-parser).
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Author
+
+Created by **parrotcore**
+
+## Links
+
+- **GitHub:** [github.com/parrotcore/bcon-parser](https://github.com/parrotcore/bcon-parser)
+- **npm:** [npmjs.com/package/bcon-parser](https://www.npmjs.com/package/bcon-parser)
+- **VS Code Extension:** [github.com/yobonez/vscode-bcon-highlighting](https://github.com/yobonez/vscode-bcon-highlighting)
+
+---
+
+<div align="center">
+
+**Made with ❤️ by the BCON community**
+
+</div>
+
 

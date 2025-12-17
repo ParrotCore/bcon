@@ -5,7 +5,7 @@ use "city" as city;
 use "town" as town;
 use "country" as country;
 
-[
+export [
     @* => capital;
     @* => regionalCapital;
     @* => importantCity;

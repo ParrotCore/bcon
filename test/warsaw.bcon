@@ -36,7 +36,7 @@ use "01-01-1283, 10:00:00.000".date as firstMentioned;
 use "01-01-1300, 12:25:17.118".date as cityLaws;
 use "./warsaw_keywords.txt".utf8 as keywords;
 
-[
+export [
 	'"""""""""""""""""""""""""""""""""""""""""""""""
 	| The best of all the capitals I have been to. |
 	"""""""""""""""""""""""""""""""""""""""""""""""'

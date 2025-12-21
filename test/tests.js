@@ -403,29 +403,12 @@ test('Array destructuring with skip keyword', () => {
 // Import Tests
 // ==============================================
 
-test('Import with require', () => {
-	const warsaw = require('./data/warsaw.bcon');
-	assert.strictEqual(warsaw.city, "Warsaw");
-	assert.strictEqual(warsaw.population, 17200000);
-	assert(Array.isArray(warsaw.monuments));
-});
-
-test('Import with require (Zgierz)', () => {
-	const zgierz = require('./data/zgierz.bcon');
-	assert.strictEqual(zgierz.city, "Zgierz");
-	assert.strictEqual(zgierz.population, 54000);
-});
-
-test('City types import', () => {
-	const cityTypes = require('./data/cityTypes.bcon');
-	assert(Array.isArray(cityTypes));
-	assert.strictEqual(cityTypes[0], "capital");
-});
-
-test('City mayors import', () => {
-	const mayors = require('./data/cityMayors.bcon');
-	assert.strictEqual(mayors.warsaw.current.name, "Rafał");
-	assert.strictEqual(mayors.warsaw.current.surname, "Trzaskowski");
+test('Import comprehensive config with require', () => {
+	const config = require('./data/comprehensive.bcon');
+	assert.strictEqual(config.city.name, "Moscow");
+	assert.strictEqual(config.city.country, "Russia");
+	assert.strictEqual(config.geography.population, 13010112);
+	assert(Array.isArray(config.government.subdivisions));
 });
 
 // ==============================================
@@ -508,43 +491,50 @@ test('Stringify nested object', () => {
 // Complex Integration Tests
 // ==============================================
 
-test('Complete Warsaw config parsing', () => {
-	const warsaw = require('./data/warsaw.bcon');
+test('Complete comprehensive config parsing', () => {
+	const config = require('./data/comprehensive.bcon');
 	
-	// Check basic properties
-	assert.strictEqual(warsaw.city, "Warsaw");
-	assert.strictEqual(warsaw.population, 17200000);
-	assert.strictEqual(warsaw.more.capitalCityOf, "Poland");
+	// Check city info
+	assert.strictEqual(config.city.name, "Moscow");
+	assert.strictEqual(config.city.country, "Russia");
+	assert.strictEqual(config.city.isCapital, true);
 	
-	// Check array access with dot notation works in parsed result
-	assert.strictEqual(warsaw.monuments[0], "Palace of Culture and Science");
+	// Check geography
+	assert.strictEqual(config.geography.population, 13010112);
+	assert.strictEqual(config.geography.area, 2561.5);
+	assert.strictEqual(config.geography.timezone, "UTC+3");
 	
-	// Check nested structures
-	assert.strictEqual(warsaw.government.body[0], "Warsaw City Council");
+	// Check government subdivisions (districts)
+	assert(Array.isArray(config.government.subdivisions));
+	assert.strictEqual(config.government.subdivisions.length, 5);
+	assert.strictEqual(config.government.subdivisions[0].name, "Central");
 	
-	// Check string interpolation
-	assert(warsaw.greeting.includes("Warsaw"));
-	assert(warsaw.greeting.includes("Poland"));
+	// Check landmarks with spread operator
+	assert(Array.isArray(config.landmarks.all));
+	assert.strictEqual(config.landmarks.all.length, 6); // historicalMonuments (2) + culturalSites (2) + modernLandmarks (2)
+	assert(config.landmarks.all.includes("Red Square"));
+	assert(config.landmarks.all.includes("Kremlin"));
 	
-	// Check dates
-	assert(warsaw.dates.first_mentioned instanceof Date);
-});
-
-test('Complete Zgierz config parsing', () => {
-	const zgierz = require('./data/zgierz.bcon');
+	// Check transport
+	assert.strictEqual(config.transport.metro.numberOfLines, 15);
+	assert.strictEqual(config.transport.metro.numberOfStations, 250);
+	assert(Array.isArray(config.transport.metro.majorStations));
+	assert.strictEqual(config.transport.metro.majorStations.length, 3);
 	
-	// Check basic properties
-	assert.strictEqual(zgierz.city, "Zgierz");
-	assert.strictEqual(zgierz.population, 54000);
-	assert.strictEqual(zgierz.more.voivodeship, "Łódź");
+	// Check heritage
+	assert(Array.isArray(config.heritage.unesco));
+	assert.strictEqual(config.heritage.unesco.length, 3);
 	
-	// Check monuments array
-	assert(Array.isArray(zgierz.monuments));
-	assert.strictEqual(zgierz.monuments[0], "St. Catherine's Church");
+	// Check facts (object spread)
+	assert.strictEqual(config.facts.foundedYear, 1147);
+	assert.strictEqual(config.facts.population, 13010112);
+	assert.strictEqual(config.facts.status, "Federal City");
 	
-	// Check mayor interpolation
-	assert(zgierz.mayor.includes("Przemysław"));
-	assert(zgierz.mayor.includes("Staniszewski"));
+	// Check descriptions (string interpolation)
+	assert(config.descriptions.main.includes("Moscow"));
+	assert(config.descriptions.main.includes("Russia"));
+	assert(config.descriptions.population.includes("1147"));
+	assert(config.descriptions.population.includes("13010112"));
 });
 
 test('Round-trip: Parse then stringify then parse', () => {
@@ -630,8 +620,8 @@ test('Class: Optional fields', () => {
 test('Class: Default values', () => {
 	const code = `
 		class Config [
-			@host: String = "localhost";
-			@port: Number = 8080;
+			@host: String => "localhost";
+			@port: Number => 8080;
 		];
 
 		use Config [

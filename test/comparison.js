@@ -105,22 +105,27 @@ console.log(`  Ratio: ${(bconStringify.avg / jsonStringify.avg).toFixed(2)}x ${b
 console.log('\n' + '='.repeat(70));
 console.log('\n📁 Real-world Config Files\n');
 
-const moscowBcon = fs.readFileSync(path.join(__dirname, 'data', 'moscow.bcon'), 'utf-8');
-const moscowParsed = BCON.parse(moscowBcon);
-const moscowJson = JSON.stringify(moscowParsed);
+const comprehensiveBcon = fs.readFileSync(path.join(__dirname, 'data', 'comprehensive.bcon'), 'utf-8');
+const comprehensiveParsed = BCON.parse(comprehensiveBcon);
 
-console.log('Moscow City Config:');
-console.log(`  BCON file: ${moscowBcon.length} bytes`);
-console.log(`  JSON equivalent: ${moscowJson.length} bytes`);
-console.log(`  BCON is ${((moscowBcon.length / moscowJson.length * 100).toFixed(1))}% of JSON size`);
+// JSON doesn't support BigInt, so we need to handle it
+const comprehensiveForJson = JSON.parse(JSON.stringify(comprehensiveParsed, (key, value) => 
+	typeof value === 'bigint' ? value.toString() : value
+));
+const comprehensiveJson = JSON.stringify(comprehensiveForJson);
 
-const moscowBconBench = benchmark('Parse Moscow BCON', () => BCON.parse(moscowBcon), 500);
-const moscowJsonBench = benchmark('Parse Moscow JSON', () => JSON.parse(moscowJson), 500);
+console.log('Comprehensive Config (All BCON Features):');
+console.log(`  BCON file: ${comprehensiveBcon.length} bytes`);
+console.log(`  JSON equivalent: ${comprehensiveJson.length} bytes`);
+console.log(`  BCON is ${((comprehensiveBcon.length / comprehensiveJson.length * 100).toFixed(1))}% of JSON size`);
+
+const comprehensiveBconBench = benchmark('Parse comprehensive BCON', () => BCON.parse(comprehensiveBcon), 500);
+const comprehensiveJsonBench = benchmark('Parse comprehensive JSON', () => JSON.parse(comprehensiveJson), 500);
 
 console.log('\nParsing Speed:');
-console.log(`  BCON: ${formatTime(moscowBconBench.avg)} (${Math.round(moscowBconBench.opsPerSec)} ops/sec)`);
-console.log(`  JSON: ${formatTime(moscowJsonBench.avg)} (${Math.round(moscowJsonBench.opsPerSec).toLocaleString()} ops/sec)`);
-console.log(`  BCON is ${(moscowBconBench.avg / moscowJsonBench.avg).toFixed(1)}x slower than JSON`);
+console.log(`  BCON: ${formatTime(comprehensiveBconBench.avg)} (${Math.round(comprehensiveBconBench.opsPerSec)} ops/sec)`);
+console.log(`  JSON: ${formatTime(comprehensiveJsonBench.avg)} (${Math.round(comprehensiveJsonBench.opsPerSec).toLocaleString()} ops/sec)`);
+console.log(`  BCON is ${(comprehensiveBconBench.avg / comprehensiveJsonBench.avg).toFixed(1)}x slower than JSON`);
 
 // ============================================
 // Feature Comparison
@@ -129,7 +134,7 @@ console.log(`  BCON is ${(moscowBconBench.avg / moscowJsonBench.avg).toFixed(1)}
 console.log('\n' + '='.repeat(70));
 console.log('\n✨ Feature Advantages\n');
 
-console.log('BCON Unique Features:');
+console.log('\nBCON Unique Features:');
 console.log('  ✅ Comments (single-line and multi-line)');
 console.log('  ✅ String interpolation with variables');
 console.log('  ✅ Variable system (use/as)');
@@ -141,6 +146,13 @@ console.log('  ✅ Reference system (Main, This)');
 console.log('  ✅ BigInt support');
 console.log('  ✅ All number formats (hex, octal, binary)');
 console.log('  ✅ Explicit export for clarity');
+console.log('  ✅ Class validators and constructors');
+console.log('  ✅ Nullish coalescing operator (?)');
+console.log('  ✅ Spread operator (...)');
+console.log('  ✅ Type validation system');
+console.log('  ✅ Inheritance (extends)');
+console.log('  ✅ Optional fields (?)');
+console.log('  ✅ Array and object destructuring');
 
 console.log('\nJSON Limitations:');
 console.log('  ❌ No comments');

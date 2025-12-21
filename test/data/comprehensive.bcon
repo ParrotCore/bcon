@@ -1,0 +1,274 @@
+# Comprehensive BCON Example - Moscow City Data
+# This file demonstrates complete BCON functionality using real-world city data
+
+'
+=================================================
+MOSCOW CITY - COMPREHENSIVE BCON DEMONSTRATION
+Version: 2.2
+Date: 2025-12-21
+=================================================
+
+This file showcases all BCON language features:
+- Data types (primitives, dates, regex, files)
+- Classes (validators and constructors)
+- Nullish coalescing operator (?)
+- Spread operator (... for arrays and objects)
+- Inheritance and composition
+- String interpolation
+- Destructuring
+- Nested structures
+- Constructor calls in default values
+- Type validation system
+
+Dataset: Moscow, the capital of Russia
+=================================================
+'
+
+# ============================================
+# 1. BASIC DATA TYPES
+# ============================================
+
+use "Moscow" as cityName;
+use "Russia" as country;
+use 13010112 as population;
+use 2561.5 as areaSqKm;
+use True as isCapital;
+use "1147-04-04T00:00:00Z".date as foundedDate;
+use /^[\p{Script=Cyrillic}\p{P}]+$/u as cyrillicNamePattern;
+use 495n as phoneCode;
+
+# ============================================
+# 2. VALIDATOR CLASSES (no parameters)
+# ============================================
+
+class CityStatus [
+    @status: String => "Active";
+    @federalSubject: String => "Federal City";
+    @timezone: String => "MSK (UTC+3)";
+    @lastUpdated?: Date;
+];
+
+class ClimateInfo [
+    @type: String => "Humid continental";
+    @avgTempWinter: Number => -6;
+    @avgTempSummer: Number => 19;
+    @annualPrecipitation: Number => 707;
+];
+
+# ============================================
+# 3. CONSTRUCTOR CLASSES (with parameters)
+# ============================================
+
+# Coordinates with nullish coalescing operator
+class Coordinates (lat, lon) [
+    @latitude: Number => lat ? 55.7558;
+    @longitude: Number => lon ? 37.6173;
+];
+
+# District with nested constructor as default value
+class District (name, population, area, coords) [
+    @name: String => name ? "Unknown District";
+    @population: Number => population ? 0;
+    @area: Number => area ? 0.0;
+    # Constructor call in default value
+    @coordinates: Coordinates => coords ? Coordinates(55.7558, 37.6173);
+];
+
+# Metro station with spread operator for lines
+class MetroStation (name, ...lines) [
+    @name: String => name ? "Unknown Station";
+    @lines: [String] => lines ? [];
+    @yearOpened?: Number;
+];
+
+# Landmark/Monument class
+class Landmark (name, type, yearBuilt) [
+    @name: String => name;
+    @type: String => type ? "Monument";
+    @yearBuilt?: Number => yearBuilt;
+    @description?: String;
+];
+
+# ============================================
+# 4. CLASS INHERITANCE
+# ============================================
+
+class Location [
+    @name: String => "Unknown Location";
+    @coordinates?: Coordinates;
+    @description?: String;
+];
+
+class HistoricalSite extends Location [
+    @yearFounded?: Number;
+    @historicalPeriod?: String;
+    @significance?: String;
+];
+
+# ============================================
+# 5. CREATING INSTANCES
+# ============================================
+
+# Validators
+use CityStatus [] as cityStatus;
+use ClimateInfo [] as climate;
+
+# City center coordinates
+use Coordinates(55.7558, 37.6173) as centerCoords;
+
+# Major districts (with constructor calls as arguments)
+use District("Central", 806941, 66.2, Coordinates(55.7558, 37.6173)) as centralDistrict;
+use District("Northern", 1174600, 113.9, Coordinates(55.8507, 37.5177)) as northernDistrict;
+use District("Southern", 1676500, 131.9, Null) as southernDistrict;
+use District("Eastern", 1497700, 154.8, Undefined) as easternDistrict;
+use District("Western", 1361012, 153.3, Coordinates(55.7039, 37.4181)) as westernDistrict;
+
+# Metro stations with spread operator
+use MetroStation("Komsomolskaya", "Red Line", "Circle Line") as komsomolskaya;
+use MetroStation("Arbatskaya", "Blue Line", "Filyovskaya Line", "Circle Line") as arbatskaya;
+use [@* => "Green Line";] as parkKulturyLines;
+use MetroStation("Park Kultury", ...parkKulturyLines, "Circle Line") as parkKultury;
+
+# Famous landmarks
+use Landmark("Red Square", "Square", Null) as redSquare;
+use Landmark("Kremlin", "Fortress", 1156) as kremlin;
+use Landmark("Saint Basil's Cathedral", "Cathedral", 1561) as stBasils;
+use Landmark("Bolshoi Theatre", "Theatre", 1825) as bolshoiTheatre;
+use Landmark("Ostankino Tower", "TV Tower", 1967) as ostankinoTower;
+
+# Historical sites with inheritance
+use HistoricalSite [
+    @name => "Moscow Kremlin";
+    @coordinates => Coordinates(55.7520, 37.6175);
+    @yearFounded => 1156;
+    @historicalPeriod => "Medieval";
+    @significance => "Political center of Russia";
+] as kremlinSite;
+
+# ============================================
+# 6. ARRAYS AND COLLECTIONS
+# ============================================
+
+# Spread operator in arrays - combining monument lists
+use [@* => "Red Square"; @* => "Kremlin";] as historicalMonuments;
+use [@* => "Bolshoi Theatre"; @* => "Tretyakov Gallery";] as culturalSites;
+use [@* => "Ostankino Tower"; @* => "Moscow City";] as modernLandmarks;
+use [...historicalMonuments; ...culturalSites; ...modernLandmarks;] as allLandmarks;
+
+# Districts collection
+use [
+    @* => centralDistrict;
+    @* => northernDistrict;
+    @* => southernDistrict;
+    @* => easternDistrict;
+    @* => westernDistrict;
+] as districtsList;
+
+# Metro stations collection
+use [
+    @* => komsomolskaya;
+    @* => arbatskaya;
+    @* => parkKultury;
+] as majorStations;
+
+# Spread operator in objects - merging city data
+use [@foundedYear => 1147; @founder => "Yuri Dolgorukiy";] as foundationInfo;
+use [@population => 13010112; @density => 5079;] as demographicInfo;
+use [@nicknames => "Third Rome"; @nicknames => "Port of Five Seas";] as cityNicknames;
+use [...foundationInfo; ...demographicInfo; @status => "Federal City";] as cityFacts;
+
+# ============================================
+# 7. STRING INTERPOLATION
+# ============================================
+
+use "[cityName] is the capital of [country]" as cityDescription;
+use "Founded in 1147, [cityName] has [population] inhabitants" as populationInfo;
+use "[cityName] covers an area of [areaSqKm] square kilometers" as areaInfo;
+use "Phone code: +7 [phoneCode]" as contactInfo;
+
+# ============================================
+# 8. MAIN DATA STRUCTURE - MOSCOW CITY
+# ============================================
+
+use [
+    @city => [
+        @name => cityName;
+        @country => country;
+        @founded => foundedDate;
+        @isCapital => isCapital;
+        @coordinates => centerCoords;
+        @phoneCode => phoneCode;
+    ];
+    
+    @geography => [
+        @population => population;
+        @area => areaSqKm;
+        @density => 5079;
+        @elevation => 156;
+        @timezone => "UTC+3";
+        @climate => climate;
+    ];
+    
+    @government => [
+        @status => cityStatus;
+        @mayor => "Sergey Sobyanin";
+        @cityDuma => "Moscow City Duma";
+        @subdivisions => districtsList;
+    ];
+    
+    @landmarks => [
+        @historical => [
+            @redSquare => redSquare;
+            @kremlin => kremlin;
+            @stBasils => stBasils;
+        ];
+        @cultural => [
+            @bolshoiTheatre => bolshoiTheatre;
+        ];
+        @modern => [
+            @ostankinoTower => ostankinoTower;
+        ];
+        @all => allLandmarks;
+    ];
+    
+    @transport => [
+        @metro => [
+            @numberOfLines => 15;
+            @numberOfStations => 250;
+            @majorStations => majorStations;
+        ];
+        @airports => [
+            @* => "Sheremetyevo";
+            @* => "Domodedovo";
+            @* => "Vnukovo";
+        ];
+        @railways => [
+            @* => "Moscow Central Circle";
+            @* => "Moscow Central Diameters";
+        ];
+    ];
+    
+    @heritage => [
+        @kremlinSite => kremlinSite;
+        @unesco => [
+            @* => "Kremlin and Red Square";
+            @* => "Church of the Ascension, Kolomenskoye";
+            @* => "Novodevichy Convent";
+        ];
+    ];
+    
+    @facts => cityFacts;
+    
+    @descriptions => [
+        @main => cityDescription;
+        @population => populationInfo;
+        @area => areaInfo;
+        @contact => contactInfo;
+    ];
+] as moscowData;
+
+# ============================================
+# EXPORT
+# ============================================
+
+export moscowData;

@@ -216,6 +216,62 @@ class Parser {
                 value,
                 binding
             };
+        } else if (this.check('IDENTIFIER')) {
+            // Może to być: use ClassName(...) as binding lub use value as binding
+            const idToken = this.current();
+            const className = idToken.value;
+            this.next();
+            
+            // Sprawdź czy jest wywołanie konstruktora
+            if (this.check('LPAREN')) {
+                const args = this.parseArguments();
+                this.expect('AS', 'Expected "as" after constructor call');
+                const binding = this.parseBinding();
+                this.expect('SEMICOLON', 'Expected semicolon after use');
+                
+                return {
+                    type: 'UseDeclaration',
+                    value: {
+                        type: 'ConstructorCall',
+                        className,
+                        arguments: args,
+                        token: idToken
+                    },
+                    binding
+                };
+            } else if (this.check('LBRACKET')) {
+                // use ClassName [value] as binding - walidator
+                const obj = this.parseObject();
+                this.expect('AS', 'Expected "as" after value');
+                const binding = this.parseBinding();
+                this.expect('SEMICOLON', 'Expected semicolon after use');
+                
+                return {
+                    type: 'UseDeclaration',
+                    value: {
+                        type: 'ClassInstance',
+                        className,
+                        value: obj,
+                        token: idToken
+                    },
+                    binding
+                };
+            } else {
+                // use identifier as binding - referencja do zmiennej
+                this.expect('AS', 'Expected "as" after identifier');
+                const binding = this.parseBinding();
+                this.expect('SEMICOLON', 'Expected semicolon after use');
+                
+                return {
+                    type: 'UseDeclaration',
+                    value: {
+                        type: 'Identifier',
+                        name: className,
+                        token: idToken
+                    },
+                    binding
+                };
+            }
         } else {
             // use value as binding;
             const value = this.parseValue();
@@ -229,6 +285,48 @@ class Parser {
                 binding
             };
         }
+    }
+
+    /**
+     * Parsuje argumenty wywołania (konstruktora)
+     */
+    parseArguments() {
+        this.expect('LPAREN');
+        const args = [];
+        
+        while (this.hasNext() && !this.check('RPAREN')) {
+            const arg = this.parseArgument();
+            args.push(arg);
+            
+            if (this.check('COMMA')) {
+                this.next();
+            } else if (!this.check('RPAREN')) {
+                this.error('Expected , or ) in argument list');
+            }
+        }
+        
+        this.expect('RPAREN');
+        return args;
+    }
+
+    /**
+     * Parsuje pojedynczy argument
+     */
+    parseArgument() {
+        let isSpread = false;
+        
+        if (this.check('SPREAD')) {
+            this.next();
+            isSpread = true;
+        }
+        
+        const value = this.parseExpression();
+        
+        return {
+            type: 'Argument',
+            value,
+            isSpread
+        };
     }
 
     /**
@@ -337,6 +435,33 @@ class Parser {
      * Parsuje wartość (literal, identifier, path, lub obiekt)
      */
     parseValue() {
+        return this.parseExpression();
+    }
+
+    /**
+     * Parsuje wyrażenie z operatorem ? (nullish coalescing)
+     */
+    parseExpression() {
+        let left = this.parsePrimaryValue();
+        
+        // Obsługa operatora ? (zwraca lewą stronę jeśli istnieje, prawą jeśli nie)
+        if (this.check('QUESTION')) {
+            this.next();
+            const right = this.parsePrimaryValue();
+            return {
+                type: 'ConditionalExpression',
+                left,
+                right
+            };
+        }
+        
+        return left;
+    }
+
+    /**
+     * Parsuje podstawową wartość
+     */
+    parsePrimaryValue() {
         const token = this.current();
         
         if (!token) {
@@ -368,6 +493,17 @@ class Parser {
         if (token.type === 'IDENTIFIER') {
             const name = token.value;
             this.next();
+            
+            // Sprawdź czy po identyfikatorze jest ( - może to konstruktor
+            if (this.check('LPAREN')) {
+                const args = this.parseArguments();
+                return {
+                    type: 'ConstructorCall',
+                    className: name,
+                    arguments: args,
+                    token
+                };
+            }
             
             // Sprawdź czy po identyfikatorze jest [ - może to instancja klasy
             if (this.check('LBRACKET')) {
@@ -410,6 +546,26 @@ class Parser {
         while (this.hasNext() && !this.check('RBRACKET')) {
             const keyToken = this.current();
             
+            // Obsługa spread operator (dla tablic i obiektów)
+            if (keyToken.type === 'SPREAD') {
+                // Pozwól na spread w tablicach lub gdy typ nie jest jeszcze określony
+                if (isArray === null) {
+                    // Będziemy musieli określić typ na podstawie wartości spread
+                    // Na razie pozwól na spread
+                }
+                
+                this.next(); // skip ...
+                const value = this.parseExpression();
+                this.expect('SEMICOLON', 'Expected semicolon after spread');
+                
+                properties.push({
+                    type: 'SpreadElement',
+                    argument: value,
+                    keyToken
+                });
+                continue;
+            }
+            
             // Wykryj typ (array vs object)
             if (keyToken.type === 'NUMERIC_KEY') {
                 if (isArray === false) {
@@ -446,8 +602,9 @@ class Parser {
         this.expect('RBRACKET');
 
         return {
-            type: isArray ? 'ArrayExpression' : 'ObjectExpression',
-            properties
+            type: isArray === true ? 'ArrayExpression' : (isArray === false ? 'ObjectExpression' : 'UnknownExpression'),
+            properties,
+            isArray // Przekaż flagę do Evaluatora
         };
     }
 
@@ -590,6 +747,12 @@ class Parser {
         const nameToken = this.expect('IDENTIFIER', 'Expected class name');
         const className = nameToken.value;
         
+        // Parametry konstruktora (opcjonalne)
+        let parameters = [];
+        if (this.check('LPAREN')) {
+            parameters = this.parseClassParameters();
+        }
+        
         // Dziedziczenie lub kompozycja
         let baseClass = null;
         let mixins = [];
@@ -627,9 +790,53 @@ class Parser {
         return {
             type: 'ClassDeclaration',
             name: className,
+            parameters,
             baseClass,
             mixins,
             fields
+        };
+    }
+
+    /**
+     * Parsuje parametry klasy (konstruktora)
+     */
+    parseClassParameters() {
+        this.expect('LPAREN');
+        const params = [];
+        
+        while (this.hasNext() && !this.check('RPAREN')) {
+            const param = this.parseClassParameter();
+            params.push(param);
+            
+            // Jeśli nie ma już więcej parametrów, przerwij
+            if (this.check('COMMA')) {
+                this.next();
+            } else if (!this.check('RPAREN')) {
+                this.error('Expected , or ) in parameter list');
+            }
+        }
+        
+        this.expect('RPAREN');
+        return params;
+    }
+
+    /**
+     * Parsuje pojedynczy parametr klasy
+     */
+    parseClassParameter() {
+        let isSpread = false;
+        
+        if (this.check('SPREAD')) {
+            this.next();
+            isSpread = true;
+        }
+        
+        const nameToken = this.expect('IDENTIFIER', 'Expected parameter name');
+        
+        return {
+            type: 'ClassParameter',
+            name: nameToken.value,
+            isSpread
         };
     }
 
@@ -652,11 +859,11 @@ class Parser {
         // Parsuj typ
         const fieldType = this.parseType();
         
-        // Wartość domyślna
+        // Wartość domyślna (tylko =>)
         let defaultValue = null;
-        if (this.check('EQUALS')) {
+        if (this.check('ARROW')) {
             this.next();
-            defaultValue = this.parseValue();
+            defaultValue = this.parseExpression();
         }
         
         this.expect('SEMICOLON', 'Expected semicolon after field');

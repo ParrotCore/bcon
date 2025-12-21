@@ -14,7 +14,12 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node ./test/tests.js",
+    "test": "node ./test/tests.js && node ./test/test-type-validation.js && node ./test/test-nested-constructors.js && node ./test/test-spread-objects.js && node ./test/test-constructor-arguments.js",
+    "test:unit": "node ./test/tests.js",
+    "test:types": "node ./test/test-type-validation.js",
+    "test:constructors": "node ./test/test-nested-constructors.js",
+    "test:spread": "node ./test/test-spread-objects.js",
+    "test:args": "node ./test/test-constructor-arguments.js",
     "performance": "node ./test/performance.js",
     "compare": "node ./test/comparison.js"
   },

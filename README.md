@@ -22,6 +22,9 @@
 Unlike traditional configuration formats, BCON provides:
 - **Rich type system** with native support for dates, regular expressions, and files
 - **Classes with validation** for structured data schemas and type checking
+- **Class constructors with parameters** for dynamic object initialization (NEW in 2.2)
+- **Nullish coalescing operator (`?`)** for elegant default values (NEW in 2.2)
+- **Spread operator (`...`)** for flexible array handling (NEW in 2.2)
 - **Variable system** with imports and references
 - **String interpolation** for dynamic values
 - **Destructuring** for elegant data extraction
@@ -41,6 +44,9 @@ BCON is perfect for application configuration files, build systems, deployment s
 - 🔗 **Variable references** - Access nested data with dot notation
 - 🎯 **Destructuring** - Extract specific values elegantly
 - 🏗️ **Classes with validation** - Define schemas with type checking and inheritance
+- 🎨 **Class constructors** - Dynamic initialization with parameters (NEW in 2.2)
+- ❓ **Nullish coalescing** - `?` operator for default values (NEW in 2.2)
+- 📤 **Spread operator** - `...` for collecting and spreading arrays (NEW in 2.2)
 - 🚫 **No arithmetic** - Purely declarative, focused on value definitions
 - 🎨 **VS Code support** - Syntax highlighting extension available
 
@@ -1018,6 +1024,115 @@ use Company [
 ] as company;
 
 export company;
+```
+
+### Class Constructors with Parameters
+
+**NEW in BCON 2.2:** Define classes with constructor parameters for dynamic initialization.
+
+#### Constructor Syntax
+
+Classes can now accept parameters that are used to initialize fields:
+
+```bcon
+class User (username, email, role) [
+    @username: String => username ? "guest";
+    @email: String => email ? "no-email@example.com";
+    @role: String => role ? "user";
+];
+
+# Instantiate with arguments
+use User("admin", "admin@example.com", "admin") as adminUser;
+# Result: { username: "admin", email: "admin@example.com", role: "admin" }
+
+use User("john", Null, Undefined) as johnUser;
+# Result: { username: "john", email: "no-email@example.com", role: "user" }
+```
+
+#### Nullish Coalescing Operator (`?`)
+
+The `?` operator returns the left side if it exists (not `null` or `undefined`), otherwise returns the right side:
+
+```bcon
+# Syntax: leftValue ? defaultValue
+
+class Config (host, port) [
+    @host: String => host ? "localhost";
+    @port: Number => port ? 8080;
+];
+
+use Config(Null, 3000) as config;
+# Result: { host: "localhost", port: 3000 }
+```
+
+#### Spread Operator (`...`)
+
+Collect remaining arguments into an array:
+
+```bcon
+class Team (teamName, leader, ...members) [
+    @name: String => teamName;
+    @leader: String => leader ? "No Leader";
+    @members: [String] => members ? [];
+];
+
+use Team("DevTeam", "Alice", "Bob", "Charlie", "David") as team;
+# Result: { name: "DevTeam", leader: "Alice", members: ["Bob", "Charlie", "David"] }
+
+# Spread an array into arguments
+use ["Eve", "Frank"] as devs;
+use Team("QATeam", "Grace", ...devs) as qaTeam;
+# Result: { name: "QATeam", leader: "Grace", members: ["Eve", "Frank"] }
+```
+
+#### Validators vs Constructors
+
+**Important distinction:**
+- **Validators** (classes without parameters) use `[]` syntax
+- **Constructors** (classes with parameters) use `()` syntax
+- Mixing them will result in an error
+
+```bcon
+# Validator (no parameters)
+class Status [
+    @code: Number => 200;
+    @message: String => "OK";
+];
+
+use Status [] as okStatus;  # ✅ Correct
+
+# Constructor (with parameters)
+class Person (name) [
+    @fullName: String => name;
+];
+
+use Person("John") as john;  # ✅ Correct
+use Person [] as invalid;    # ❌ Error: requires arguments
+```
+
+#### Advanced Example
+
+```bcon
+class Address (street, city, country, postalCode) [
+    @street: String => street ? "Unknown Street";
+    @city: String => city;
+    @country: String => country ? "Poland";
+    @postalCode?: String => postalCode;
+];
+
+class UserProfile (user, ...addresses) [
+    @user: User => user;
+    @addresses: [Address] => addresses ? [];
+    @isActive: Boolean => True;
+];
+
+use User("admin", "admin@example.com", "admin") as admin;
+use Address("Main St 123", "Warsaw", Null, "00-001") as addr1;
+use Address(Null, "Krakow", "Poland", Undefined) as addr2;
+
+use UserProfile(admin, addr1, addr2) as profile;
+export profile;
+# Result: Complete user profile with nested objects and arrays
 ```
 
 ## Export Statement

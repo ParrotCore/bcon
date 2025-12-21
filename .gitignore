@@ -1,5 +1,9 @@
 .git
 .vscode
-analysis.js
 node_modules/
 *.log
+*.tmp
+.DS_Store
+thumbs.db
+coverage/
+.nyc_output/

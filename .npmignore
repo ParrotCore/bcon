@@ -3,14 +3,18 @@
 .gitignore
 .vscode
 .github
-analysis.js
+*.log
+*.tmp
+.DS_Store
+thumbs.db
+coverage/
+.nyc_output/
 
-# Test files (optional - remove these lines if you want to include tests)
+# Tests are included in the package for users to explore
+# Remove if you want to exclude them:
 # test/
-# test-esm.mjs
-# example-esm.mjs
 
-# Documentation (keep in package)
+# Documentation files (included in package)
 # README.md
 # LICENSE
 # CHANGELOG.md

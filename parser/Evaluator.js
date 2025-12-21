@@ -150,14 +150,36 @@ class Evaluator {
             
             case 'ObjectExpression':
             case 'ArrayExpression':
+            case 'UnknownExpression':
                 return this.evaluateObject(node, context);
             
             case 'ClassInstance':
                 return this.evaluateClassInstance(node, context);
             
+            case 'ConstructorCall':
+                return this.evaluateConstructorCall(node, context);
+            
+            case 'ConditionalExpression':
+                return this.evaluateConditionalExpression(node, context);
+            
             default:
                 throw new Error(`Unknown node type: ${node.type}`);
         }
+    }
+
+    /**
+     * Ewaluuje wyrażenie warunkowe (operator ?)
+     * Zwraca lewą stronę jeśli istnieje (nie jest null/undefined), prawą w przeciwnym razie
+     */
+    evaluateConditionalExpression(node, context) {
+        const left = this.evaluateValue(node.left, context);
+        
+        // Sprawdź czy lewa strona "istnieje" (nie jest null ani undefined)
+        if (left !== null && left !== undefined) {
+            return left;
+        }
+        
+        return this.evaluateValue(node.right, context);
     }
 
     /**
@@ -214,8 +236,14 @@ class Evaluator {
      * Ewaluuje identifier
      */
     evaluateIdentifier(node, context) {
+        // Najpierw sprawdź w zmiennych globalnych
         if (node.name in this.variables) {
             return this.variables[node.name];
+        }
+        
+        // Jeśli nie ma w zmiennych, sprawdź w kontekście (parametry konstruktora)
+        if (node.name in context && node.name !== 'Main' && node.name !== 'This') {
+            return context[node.name];
         }
         
         throw new Error(`Undefined variable: ${node.name}`);
@@ -253,7 +281,23 @@ class Evaluator {
      * Ewaluuje obiekt lub tablicę
      */
     evaluateObject(node, parentContext) {
-        const isArray = node.type === 'ArrayExpression';
+        let isArray = node.type === 'ArrayExpression';
+        
+        // Jeśli typ jest nieznany (tylko spread bez kluczy), ustal typ dynamicznie
+        if (node.type === 'UnknownExpression') {
+            // Sprawdź pierwszy spread element aby ustalić typ
+            const firstSpread = node.properties.find(p => p.type === 'SpreadElement');
+            if (firstSpread) {
+                // Ewaluuj pierwszy spread aby sprawdzić czy to tablica czy obiekt
+                const tempContext = { ...parentContext };
+                const firstValue = this.evaluateValue(firstSpread.argument, tempContext);
+                isArray = Array.isArray(firstValue);
+            } else {
+                // Brak spread - domyślnie obiekt (to nie powinno się zdarzyć)
+                isArray = false;
+            }
+        }
+        
         const result = isArray ? [] : {};
 
         // Utwórz nowy kontekst
@@ -269,11 +313,100 @@ class Evaluator {
 
         // Ewaluuj właściwości
         for (const prop of node.properties) {
-            const value = this.evaluateValue(prop.value, context);
-            result[prop.key] = value;
+            if (prop.type === 'SpreadElement') {
+                const spreadValue = this.evaluateValue(prop.argument, context);
+                
+                if (isArray) {
+                    // Spread w tablicy - musi być tablica
+                    if (!Array.isArray(spreadValue)) {
+                        throw new TypeError(`Cannot spread non-array value in array`);
+                    }
+                    
+                    // Dodaj wszystkie elementy z rozpakowanej tablicy
+                    result.push(...spreadValue);
+                } else {
+                    // Spread w obiekcie - musi być obiekt
+                    if (typeof spreadValue !== 'object' || spreadValue === null || Array.isArray(spreadValue)) {
+                        throw new TypeError(`Cannot spread non-object value in object`);
+                    }
+                    
+                    // Skopiuj wszystkie klucze z obiektu
+                    Object.assign(result, spreadValue);
+                }
+            } else {
+                const value = this.evaluateValue(prop.value, context);
+                
+                if (isArray) {
+                    // Dla tablic używaj push zamiast przypisywania przez indeks
+                    result.push(value);
+                } else {
+                    // Dla obiektów używaj klucza
+                    result[prop.key] = value;
+                }
+            }
         }
 
         return result;
+    }
+
+    /**
+     * Ewaluuje wywołanie konstruktora
+     */
+    evaluateConstructorCall(node, context) {
+        const { className, arguments: args } = node;
+        
+        if (!this.classes[className]) {
+            throw new Error(`Class "${className}" not found`);
+        }
+        
+        const classDef = this.classes[className];
+        
+        // Sprawdź czy klasa ma parametry
+        if (classDef.parameters.length === 0) {
+            throw new Error(
+                `Class "${className}" is a validator (no constructor parameters) and cannot be called with arguments. Use: use ${className} [...] as instance`
+            );
+        }
+        
+        // Ewaluuj argumenty
+        const evaluatedArgs = [];
+        for (const arg of args) {
+            const value = this.evaluateValue(arg.value, context);
+            
+            if (arg.isSpread) {
+                // Spread operator - dodaj wszystkie elementy tablicy
+                if (!Array.isArray(value)) {
+                    throw new Error(`Spread operator can only be used with arrays`);
+                }
+                evaluatedArgs.push(...value);
+            } else {
+                evaluatedArgs.push(value);
+            }
+        }
+        
+        // Przypisz argumenty do parametrów
+        const parameterValues = {};
+        let spreadValues = [];
+        
+        for (let i = 0; i < classDef.parameters.length; i++) {
+            const param = classDef.parameters[i];
+            
+            if (param.isSpread) {
+                // Spread parameter - zbierz wszystkie pozostałe argumenty
+                spreadValues = evaluatedArgs.slice(i);
+                parameterValues[param.name] = spreadValues;
+                break;
+            } else {
+                if (i < evaluatedArgs.length) {
+                    parameterValues[param.name] = evaluatedArgs[i];
+                } else {
+                    parameterValues[param.name] = undefined;
+                }
+            }
+        }
+        
+        // Utwórz instancję z parametrami
+        return this.createInstanceWithParameters(className, parameterValues, context);
     }
 
     /**
@@ -281,6 +414,19 @@ class Evaluator {
      */
     evaluateClassInstance(node, context) {
         const { className, value } = node;
+        
+        if (!this.classes[className]) {
+            throw new Error(`Class "${className}" not found`);
+        }
+        
+        const classDef = this.classes[className];
+        
+        // Sprawdź czy klasa ma parametry (jest konstruktorem)
+        if (classDef.parameters.length > 0) {
+            throw new Error(
+                `Class "${className}" is a constructor and requires arguments. Use: use ${className}(...args) as instance`
+            );
+        }
         
         // Ewaluuj wartość obiektu
         const objValue = this.evaluateValue(value, context);
@@ -293,7 +439,7 @@ class Evaluator {
      * Rejestruje definicję klasy
      */
     registerClass(classDecl) {
-        const { name, baseClass, mixins, fields } = classDecl;
+        const { name, parameters, baseClass, mixins, fields } = classDecl;
         
         // Rozwiń dziedziczenie
         let allFields = [...fields];
@@ -316,6 +462,7 @@ class Evaluator {
         
         this.classes[name] = {
             name,
+            parameters: parameters || [],
             baseClass,
             mixins,
             fields: allFields
@@ -365,6 +512,56 @@ class Evaluator {
             throw new Error(
                 `Unknown fields in class "${className}": ${extra}`
             );
+        }
+        
+        return instance;
+    }
+
+    /**
+     * Tworzy instancję klasy z parametrami konstruktora
+     */
+    createInstanceWithParameters(className, parameterValues, context) {
+        if (!this.classes[className]) {
+            throw new Error(`Class "${className}" not found`);
+        }
+        
+        const classDef = this.classes[className];
+        const instance = {};
+        
+        // Utwórz kontekst z parametrami dla ewaluacji defaultValue
+        const paramContext = {
+            ...context,
+            ...parameterValues
+        };
+        
+        // Przypisz pola
+        for (const field of classDef.fields) {
+            const { name, fieldType, isOptional, defaultValue } = field;
+            
+            let fieldValue;
+            
+            if (defaultValue !== null) {
+                // Ewaluuj wartość domyślną (może używać parametrów z operatorem ?)
+                fieldValue = this.evaluateValue(defaultValue, paramContext);
+                
+                // Jeśli pole jest opcjonalne i wartość to undefined, pomiń
+                if (isOptional && (fieldValue === undefined || fieldValue === null)) {
+                    continue;
+                }
+            } else if (isOptional) {
+                continue; // Pole opcjonalne bez wartości domyślnej
+            } else {
+                throw new Error(
+                    `Missing value for required field "${name}" in constructor of class "${className}"`
+                );
+            }
+            
+            // Waliduj typ (ale pomiń jeśli pole opcjonalne i wartość to undefined)
+            if (!(isOptional && (fieldValue === undefined || fieldValue === null))) {
+                this.validateType(fieldValue, fieldType, `${className}.${name}`);
+            }
+            
+            instance[name] = fieldValue;
         }
         
         return instance;

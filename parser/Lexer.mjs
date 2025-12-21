@@ -102,6 +102,7 @@ class Lexer {
             
             // Symbole
             { type: 'ARROW', pattern: /=>/g },
+            { type: 'SPREAD', pattern: /\.{3}/g },
             { type: 'ASSOC_KEY', pattern: /@[A-Za-z_][A-Za-z0-9_]*/g },
             { type: 'NUMERIC_KEY', pattern: /@\*/g },
             
@@ -110,8 +111,11 @@ class Lexer {
             { type: 'IDENTIFIER', pattern: /[A-Za-z_][A-Za-z0-9_]*/g },
             
             // Pozostałe symbole
+            { type: 'LPAREN', pattern: /\(/g },
+            { type: 'RPAREN', pattern: /\)/g },
             { type: 'LBRACKET', pattern: /\[/g },
             { type: 'RBRACKET', pattern: /\]/g },
+            { type: 'COMMA', pattern: /,/g },
             { type: 'SEMICOLON', pattern: /;/g },
             { type: 'COLON', pattern: /:/g },
             { type: 'QUESTION', pattern: /\?/g },

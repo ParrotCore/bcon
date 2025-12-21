@@ -1,55 +1,55 @@
 /**
- * BCON Evaluator - Wykonanie AST
- * Przekształca AST w właściwe wartości JavaScript
+ * BCON Evaluator - AST Execution
+ * Transforms AST into proper JavaScript values
  */
 
-import {  readFileSync  } from 'node:fs';
+import { readFileSync } from 'node:fs';
 
 class Evaluator {
     constructor(config = {}) {
         this.config = config;
         this.cache = new Map();
         this.variables = {};
-        this.classes = {}; // Przechowywanie definicji klas
+        this.classes = {}; // Store class definitions
     }
 
     /**
-     * Ewaluuje moduł BCON
+     * Evaluates BCON module
      */
     evaluate(ast, parseFunction) {
         this.parseFunction = parseFunction;
         this.variables = {};
         this.classes = {};
 
-        // Ewaluuj definicje klas
+        // Evaluate class definitions
         for (const classDecl of ast.classes) {
             this.registerClass(classDecl);
         }
 
-        // Ewaluuj importy
+        // Evaluate imports
         for (const importDecl of ast.imports) {
             this.evaluateImport(importDecl);
         }
 
-        // Ewaluuj use
+        // Evaluate use declarations
         for (const useDecl of ast.uses) {
             this.evaluateUse(useDecl);
         }
 
-        // Ewaluuj body (wartość export lub domyślny obiekt)
+        // Evaluate body (export value or default object)
         const result = this.evaluateValue(ast.body, {});
         
         return result;
     }
 
     /**
-     * Ewaluuje import
+     * Evaluates import declaration
      */
     evaluateImport(importDecl) {
         const { source, binding } = importDecl;
         const { path, encoding } = source;
 
-        // Sprawdź cache
+        // Check cache
         let value;
         if (this.cache.has(path)) {
             value = this.cache.get(path);
@@ -64,12 +64,12 @@ class Evaluator {
             }
         }
 
-        // Przypisz do binding
+        // Assign to binding
         this.assignBinding(binding, value);
     }
 
     /**
-     * Ewaluuje use
+     * Evaluates use declaration
      */
     evaluateUse(useDecl) {
         const { value, binding } = useDecl;
@@ -78,7 +78,7 @@ class Evaluator {
     }
 
     /**
-     * Przypisuje wartość do bindingu (identifier lub destructuring)
+     * Assigns value to binding (identifier or destructuring)
      */
     assignBinding(binding, value) {
         if (binding.type === 'Identifier') {
@@ -87,14 +87,14 @@ class Evaluator {
             for (const item of binding.bindings) {
                 let extracted = value;
                 
-                // Przejdź przez ścieżkę
+                // Traverse through path
                 for (const key of item.path) {
                     if (extracted == null) {
                         extracted = undefined;
                         break;
                     }
                     
-                    // Dla tablic, próbuj zinterpretować klucz jako indeks
+                    // For arrays, try to interpret key as index
                     if (Array.isArray(extracted)) {
                         const index = /^\d+$/.test(key) ? parseInt(key, 10) : key;
                         extracted = extracted[index];
@@ -109,29 +109,25 @@ class Evaluator {
     }
 
     /**
-     * Pobiera wartość z zagnieżdżonej ścieżki
+     * Gets value from nested path
      */
     getPath(obj, path) {
         let current = obj;
         
         for (const key of path) {
-            if (current == null) {
-                return undefined;
-            }
+            if (current == null) return undefined;
             
-            // Dla tablic, próbuj zinterpretować klucz jako indeks
-            if (Array.isArray(current) && /^\d+$/.test(key)) {
-                current = current[parseInt(key, 10)];
-            } else {
-                current = current[key];
-            }
+            // For arrays, try to interpret key as index
+            current = Array.isArray(current) && /^\d+$/.test(key)
+                ? current[parseInt(key, 10)]
+                : current[key];
         }
         
         return current;
     }
 
     /**
-     * Ewaluuje wartość
+     * Evaluates value node
      */
     evaluateValue(node, context) {
         if (!node) {
@@ -168,13 +164,13 @@ class Evaluator {
     }
 
     /**
-     * Ewaluuje wyrażenie warunkowe (operator ?)
-     * Zwraca lewą stronę jeśli istnieje (nie jest null/undefined), prawą w przeciwnym razie
+     * Evaluates conditional expression (? operator)
+     * Returns left side if it exists (not null/undefined), right side otherwise
      */
     evaluateConditionalExpression(node, context) {
         const left = this.evaluateValue(node.left, context);
         
-        // Sprawdź czy lewa strona "istnieje" (nie jest null ani undefined)
+        // Check if left side "exists" (not null or undefined)
         if (left !== null && left !== undefined) {
             return left;
         }
@@ -183,14 +179,14 @@ class Evaluator {
     }
 
     /**
-     * Ewaluuje literał
+     * Evaluates literal value
      */
     evaluateLiteral(node, context) {
         if (node.valueType === 'STRING') {
-            // Interpolacja stringów
+            // String interpolation
             return this.interpolateString(node.value, context);
         } else if (node.valueType === 'FILE') {
-            // Wczytaj plik
+            // Load file
             const { path, encoding } = node.value;
             return readFileSync(path, encoding);
         }
@@ -199,16 +195,32 @@ class Evaluator {
     }
 
     /**
-     * Interpolacja stringów [Main.property]
+     * String interpolation [Main.property] or [Main.property ? "default"]
      */
     interpolateString(str, context) {
         return str.replace(
-            /(?<!\\)\[([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*|\.\d+)*)\]/g,
-            (match, path) => {
+            /(?<!\\)\[([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*|\.\d+)*)(?:\s*\?\s*("(?:[^"\\]|\\.)*"|[^\]]+))?\]/g,
+            (match, path, defaultValue) => {
                 try {
                     const value = this.resolvePath(path, context);
-                    return value !== undefined && value !== null ? String(value) : match;
+                    
+                    // If value exists (not null/undefined), use it
+                    if (value !== undefined && value !== null) {
+                        return String(value);
+                    }
+                    
+                    // If default value is provided, use it
+                    if (defaultValue !== undefined) {
+                        return this.parseInterpolationDefault(defaultValue.trim());
+                    }
+                    
+                    // No value and no default - keep placeholder
+                    return match;
                 } catch {
+                    // On error, use default value if provided
+                    if (defaultValue !== undefined) {
+                        return this.parseInterpolationDefault(defaultValue.trim());
+                    }
                     return match;
                 }
             }
@@ -233,15 +245,58 @@ class Evaluator {
     }
 
     /**
-     * Ewaluuje identifier
+     * Parses default value in string interpolation
+     */
+    parseInterpolationDefault(value) {
+        // Escaped string literal (\"text\" inside the outer string)
+        if (value.startsWith('\\"') && value.endsWith('\\"')) {
+            return value.slice(2, -2).replace(/\\(.)/g, (match, char) => {
+                const escapes = {
+                    'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r',
+                    't': '\t', 'v': '\v', '"': '"', '\\': '\\'
+                };
+                return escapes[char] || match;
+            });
+        }
+        
+        // String literal
+        if (value.startsWith('"') && value.endsWith('"')) {
+            return value.slice(1, -1).replace(/\\(.)/g, (match, char) => {
+                const escapes = {
+                    'b': '\b', 'f': '\f', 'n': '\n', 'r': '\r',
+                    't': '\t', 'v': '\v', '"': '"', '\\': '\\'
+                };
+                return escapes[char] || match;
+            });
+        }
+        
+        // Number
+        if (/^-?\d+(\.\d+)?$/.test(value)) {
+            return value;
+        }
+        
+        // Boolean
+        if (value === 'True') return 'true';
+        if (value === 'False') return 'false';
+        
+        // Null/Undefined
+        if (value === 'Null') return 'null';
+        if (value === 'Undefined') return 'undefined';
+        
+        // Default: return as-is
+        return value;
+    }
+
+    /**
+     * Evaluates identifier
      */
     evaluateIdentifier(node, context) {
-        // Najpierw sprawdź w zmiennych globalnych
+        // First check in global variables
         if (node.name in this.variables) {
             return this.variables[node.name];
         }
         
-        // Jeśli nie ma w zmiennych, sprawdź w kontekście (parametry konstruktora)
+        // If not in variables, check in context (constructor parameters)
         if (node.name in context && node.name !== 'Main' && node.name !== 'This') {
             return context[node.name];
         }
@@ -250,14 +305,14 @@ class Evaluator {
     }
 
     /**
-     * Ewaluuje path (Main.property.nested)
+     * Evaluates path (Main.property.nested)
      */
     evaluatePath(node, context) {
         return this.resolvePath(node.path, context);
     }
 
     /**
-     * Rozwiązuje ścieżkę względem kontekstu
+     * Resolves path relative to context
      */
     resolvePath(pathStr, context) {
         const parts = pathStr.split('.');
@@ -278,69 +333,69 @@ class Evaluator {
     }
 
     /**
-     * Ewaluuje obiekt lub tablicę
+     * Evaluates object or array
      */
     evaluateObject(node, parentContext) {
         let isArray = node.type === 'ArrayExpression';
         
-        // Jeśli typ jest nieznany (tylko spread bez kluczy), ustal typ dynamicznie
+        // If type is unknown (only spread without keys), determine type dynamically
         if (node.type === 'UnknownExpression') {
-            // Sprawdź pierwszy spread element aby ustalić typ
+            // Check first spread element to determine type
             const firstSpread = node.properties.find(p => p.type === 'SpreadElement');
             if (firstSpread) {
-                // Ewaluuj pierwszy spread aby sprawdzić czy to tablica czy obiekt
+                // Evaluate first spread to check if it's array or object
                 const tempContext = { ...parentContext };
                 const firstValue = this.evaluateValue(firstSpread.argument, tempContext);
                 isArray = Array.isArray(firstValue);
             } else {
-                // Brak spread - domyślnie obiekt (to nie powinno się zdarzyć)
+                // No spread - default to object (this shouldn't happen)
                 isArray = false;
             }
         }
         
         const result = isArray ? [] : {};
 
-        // Utwórz nowy kontekst
+        // Create new context
         const context = {
             ...parentContext,
             This: result
         };
 
-        // Jeśli to główny obiekt, ustaw Main
+        // If this is main object, set Main
         if (!parentContext.Main) {
             context.Main = result;
         }
 
-        // Ewaluuj właściwości
+        // Evaluate properties
         for (const prop of node.properties) {
             if (prop.type === 'SpreadElement') {
                 const spreadValue = this.evaluateValue(prop.argument, context);
                 
                 if (isArray) {
-                    // Spread w tablicy - musi być tablica
+                    // Spread in array - must be array
                     if (!Array.isArray(spreadValue)) {
                         throw new TypeError(`Cannot spread non-array value in array`);
                     }
                     
-                    // Dodaj wszystkie elementy z rozpakowanej tablicy
+                    // Add all elements from spread array
                     result.push(...spreadValue);
                 } else {
-                    // Spread w obiekcie - musi być obiekt
+                    // Spread in object - must be object
                     if (typeof spreadValue !== 'object' || spreadValue === null || Array.isArray(spreadValue)) {
                         throw new TypeError(`Cannot spread non-object value in object`);
                     }
                     
-                    // Skopiuj wszystkie klucze z obiektu
+                    // Copy all keys from object
                     Object.assign(result, spreadValue);
                 }
             } else {
                 const value = this.evaluateValue(prop.value, context);
                 
                 if (isArray) {
-                    // Dla tablic używaj push zamiast przypisywania przez indeks
+                    // For arrays use push instead of index assignment
                     result.push(value);
                 } else {
-                    // Dla obiektów używaj klucza
+                    // For objects use key
                     result[prop.key] = value;
                 }
             }
@@ -350,7 +405,7 @@ class Evaluator {
     }
 
     /**
-     * Ewaluuje wywołanie konstruktora
+     * Evaluates constructor call
      */
     evaluateConstructorCall(node, context) {
         const { className, arguments: args } = node;
@@ -368,13 +423,13 @@ class Evaluator {
             );
         }
         
-        // Ewaluuj argumenty
+        // Evaluate arguments
         const evaluatedArgs = [];
         for (const arg of args) {
             const value = this.evaluateValue(arg.value, context);
             
             if (arg.isSpread) {
-                // Spread operator - dodaj wszystkie elementy tablicy
+                // Spread operator - add all array elements
                 if (!Array.isArray(value)) {
                     throw new Error(`Spread operator can only be used with arrays`);
                 }
@@ -384,7 +439,7 @@ class Evaluator {
             }
         }
         
-        // Przypisz argumenty do parametrów
+        // Assign arguments to parameters
         const parameterValues = {};
         let spreadValues = [];
         
@@ -392,7 +447,7 @@ class Evaluator {
             const param = classDef.parameters[i];
             
             if (param.isSpread) {
-                // Spread parameter - zbierz wszystkie pozostałe argumenty
+                // Spread parameter - collect all remaining arguments
                 spreadValues = evaluatedArgs.slice(i);
                 parameterValues[param.name] = spreadValues;
                 break;
@@ -405,12 +460,12 @@ class Evaluator {
             }
         }
         
-        // Utwórz instancję z parametrami
+        // Create instance with parameters
         return this.createInstanceWithParameters(className, parameterValues, context);
     }
 
     /**
-     * Ewaluuje instancję klasy
+     * Evaluates class instance
      */
     evaluateClassInstance(node, context) {
         const { className, value } = node;
@@ -421,38 +476,44 @@ class Evaluator {
         
         const classDef = this.classes[className];
         
-        // Sprawdź czy klasa ma parametry (jest konstruktorem)
+        // Check if class has parameters (is a constructor)
         if (classDef.parameters.length > 0) {
             throw new Error(
                 `Class "${className}" is a constructor and requires arguments. Use: use ${className}(...args) as instance`
             );
         }
         
-        // Ewaluuj wartość obiektu
+        // Evaluate object value
         const objValue = this.evaluateValue(value, context);
         
-        // Utwórz instancję z walidacją
+        // Create instance with validation
         return this.createInstance(className, objValue, context);
     }
 
     /**
-     * Rejestruje definicję klasy
+     * Registers class definition
      */
     registerClass(classDecl) {
         const { name, parameters, baseClass, mixins, fields } = classDecl;
         
-        // Rozwiń dziedziczenie
+        // Expand inheritance
         let allFields = [...fields];
+        let inheritedParameters = parameters || [];
         
         if (baseClass) {
             if (!this.classes[baseClass]) {
                 throw new Error(`Base class "${baseClass}" not found`);
             }
-            // Dodaj pola z klasy bazowej (mogą być nadpisane)
+            // Add fields from base class (can be overridden)
             allFields = [...this.classes[baseClass].fields, ...fields];
+            
+            // If child has no constructor parameters, inherit from parent
+            if (inheritedParameters.length === 0 && this.classes[baseClass].parameters.length > 0) {
+                inheritedParameters = this.classes[baseClass].parameters;
+            }
         }
         
-        // Dodaj pola z mixinów
+        // Add fields from mixins
         for (const mixin of mixins) {
             if (!this.classes[mixin]) {
                 throw new Error(`Mixin class "${mixin}" not found`);
@@ -462,7 +523,7 @@ class Evaluator {
         
         this.classes[name] = {
             name,
-            parameters: parameters || [],
+            parameters: inheritedParameters,
             baseClass,
             mixins,
             fields: allFields
@@ -470,7 +531,7 @@ class Evaluator {
     }
 
     /**
-     * Tworzy instancję klasy z walidacją
+     * Creates class instance with validation
      */
     createInstance(className, value, context) {
         if (!this.classes[className]) {
@@ -481,7 +542,7 @@ class Evaluator {
         const instance = {};
         const providedKeys = new Set(Object.keys(value));
         
-        // Waliduj i przypisz pola
+        // Validate and assign fields
         for (const field of classDef.fields) {
             const { name, fieldType, isOptional, defaultValue } = field;
             
@@ -493,7 +554,7 @@ class Evaluator {
             } else if (defaultValue !== null) {
                 fieldValue = this.evaluateValue(defaultValue, context);
             } else if (isOptional) {
-                continue; // Pole opcjonalne i nie podane
+                continue; // Optional field not provided
             } else {
                 throw new Error(
                     `Missing required field "${name}" in class "${className}"`
@@ -506,7 +567,7 @@ class Evaluator {
             instance[name] = fieldValue;
         }
         
-        // Sprawdź czy nie ma nadmiarowych pól
+        // Check for excess fields
         if (providedKeys.size > 0) {
             const extra = Array.from(providedKeys).join(', ');
             throw new Error(
@@ -518,7 +579,7 @@ class Evaluator {
     }
 
     /**
-     * Tworzy instancję klasy z parametrami konstruktora
+     * Creates class instance with constructor parameters
      */
     createInstanceWithParameters(className, parameterValues, context) {
         if (!this.classes[className]) {
@@ -528,35 +589,35 @@ class Evaluator {
         const classDef = this.classes[className];
         const instance = {};
         
-        // Utwórz kontekst z parametrami dla ewaluacji defaultValue
+        // Create context with parameters for defaultValue evaluation
         const paramContext = {
             ...context,
             ...parameterValues
         };
         
-        // Przypisz pola
+        // Assign fields
         for (const field of classDef.fields) {
             const { name, fieldType, isOptional, defaultValue } = field;
             
             let fieldValue;
             
             if (defaultValue !== null) {
-                // Ewaluuj wartość domyślną (może używać parametrów z operatorem ?)
+                // Evaluate default value (can use parameters with ? operator)
                 fieldValue = this.evaluateValue(defaultValue, paramContext);
                 
-                // Jeśli pole jest opcjonalne i wartość to undefined, pomiń
+                // If field is optional and value is undefined, skip
                 if (isOptional && (fieldValue === undefined || fieldValue === null)) {
                     continue;
                 }
             } else if (isOptional) {
-                continue; // Pole opcjonalne bez wartości domyślnej
+                continue; // Optional field without default value
             } else {
                 throw new Error(
                     `Missing value for required field "${name}" in constructor of class "${className}"`
                 );
             }
             
-            // Waliduj typ (ale pomiń jeśli pole opcjonalne i wartość to undefined)
+            // Validate type (but skip if optional field and value is undefined)
             if (!(isOptional && (fieldValue === undefined || fieldValue === null))) {
                 this.validateType(fieldValue, fieldType, `${className}.${name}`);
             }
@@ -568,7 +629,7 @@ class Evaluator {
     }
 
     /**
-     * Waliduje typ wartości
+     * Validates value type
      */
     validateType(value, typeNode, fieldPath) {
         switch (typeNode.type) {
@@ -593,23 +654,11 @@ class Evaluator {
     }
 
     /**
-     * Waliduje typ referencyjny
+     * Validates reference type
      */
     validateTypeReference(value, typeName, fieldPath) {
-        // Typy prymitywne
-        const primitiveValidators = {
-            'String': (v) => typeof v === 'string',
-            'Number': (v) => typeof v === 'number' && !isNaN(v),
-            'Boolean': (v) => typeof v === 'boolean',
-            'BigInt': (v) => typeof v === 'bigint',
-            'Date': (v) => v instanceof Date,
-            'RegExp': (v) => v instanceof RegExp,
-            'Array': (v) => Array.isArray(v),
-            'Object': (v) => typeof v === 'object' && v !== null && !Array.isArray(v),
-            'Any': (v) => true,
-            'Null': (v) => v === null,
-            'Undefined': (v) => v === undefined,
-        };
+        // Primitive types
+        const primitiveValidators = this.getPrimitiveValidators();
         
         if (typeName in primitiveValidators) {
             if (!primitiveValidators[typeName](value)) {
@@ -620,7 +669,7 @@ class Evaluator {
             return;
         }
         
-        // Sprawdź czy to klasa użytkownika - waliduj głęboko
+        // Check if it's a user class - validate deeply
         if (typeName in this.classes) {
             // Dla obiektów sprawdź czy mają odpowiednie pola
             if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -629,7 +678,7 @@ class Evaluator {
                 );
             }
             
-            // GŁĘBOKA WALIDACJA: Sprawdź czy obiekt pasuje do schematu klasy
+            // DEEP VALIDATION: Check if object matches class schema
             const classDef = this.classes[typeName];
             const providedKeys = new Set(Object.keys(value));
             
@@ -637,7 +686,7 @@ class Evaluator {
                 const { name, fieldType, isOptional, defaultValue } = field;
                 
                 if (name in value) {
-                    // Rekurencyjnie waliduj zagnieżdżone pola
+                    // Recursively validate nested fields
                     this.validateType(value[name], fieldType, `${fieldPath}.${name}`);
                     providedKeys.delete(name);
                 } else if (!isOptional && defaultValue === null) {
@@ -647,7 +696,7 @@ class Evaluator {
                 }
             }
             
-            // Sprawdź nadmiarowe pola
+            // Check for excess fields
             if (providedKeys.size > 0) {
                 const extra = Array.from(providedKeys).join(', ');
                 throw new Error(
@@ -662,7 +711,7 @@ class Evaluator {
     }
 
     /**
-     * Waliduje typ obiektowy
+     * Validates object type
      */
     validateObjectType(value, typeNode, fieldPath) {
         if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -691,7 +740,7 @@ class Evaluator {
     }
 
     /**
-     * Waliduje typ tablicowy
+     * Validates array type
      */
     validateArrayType(value, typeNode, fieldPath) {
         if (!Array.isArray(value)) {
@@ -709,7 +758,7 @@ class Evaluator {
     }
 
     /**
-     * Waliduje typ tuple
+     * Validates tuple type
      */
     validateTupleType(value, typeNode, fieldPath) {
         if (!Array.isArray(value)) {
@@ -730,7 +779,7 @@ class Evaluator {
     }
 
     /**
-     * Waliduje typ literału
+     * Validates literal type
      */
     validateLiteralType(value, typeNode, fieldPath) {
         if (value !== typeNode.value) {
@@ -741,7 +790,7 @@ class Evaluator {
     }
 
     /**
-     * Pobiera nazwę typu dla wartości
+     * Gets type name for value
      */
     getTypeName(value) {
         if (value === null) return 'null';
@@ -751,6 +800,25 @@ class Evaluator {
         if (value instanceof RegExp) return 'RegExp';
         if (typeof value === 'bigint') return 'BigInt';
         return typeof value;
+    }
+    
+    /**
+     * Gets primitive type validators map
+     */
+    getPrimitiveValidators() {
+        return {
+            'String': (v) => typeof v === 'string',
+            'Number': (v) => typeof v === 'number' && !isNaN(v),
+            'Boolean': (v) => typeof v === 'boolean',
+            'BigInt': (v) => typeof v === 'bigint',
+            'Date': (v) => v instanceof Date,
+            'RegExp': (v) => v instanceof RegExp,
+            'Array': (v) => Array.isArray(v),
+            'Object': (v) => typeof v === 'object' && v !== null && !Array.isArray(v),
+            'Any': (v) => true,
+            'Null': (v) => v === null,
+            'Undefined': (v) => v === undefined,
+        };
     }
 }
 

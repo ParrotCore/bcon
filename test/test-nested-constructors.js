@@ -1,11 +1,11 @@
 const BCON = require('..');
 const assert = require('assert');
 
-console.log('\n🧪 Testowanie zagnieżdżonych konstruktorów i walidatorów\n');
+console.log('\n🧪 Testing nested constructors and validators\n');
 console.log('='.repeat(70));
 
-// Test 1: Konstruktor jako wartość domyślna
-console.log('\n📋 Test 1: Konstruktor jako wartość domyślna w klasie');
+// Test 1: Constructor as default value
+console.log('\n📋 Test 1: Constructor as default value in class');
 const code1 = `
     class Address (city, country) [
         @city: String => city ? "Unknown";
@@ -36,13 +36,13 @@ try {
     assert.strictEqual(result1.p2.address.city, "Krakow");
     assert.strictEqual(result1.p2.address.country, "Poland");
     
-    console.log('✅ Test 1 przeszedł');
+    console.log('✅ Test 1 passed');
 } catch (err) {
-    console.log('❌ Test 1 nie przeszedł:', err.message);
+    console.log('❌ Test 1 failed:', err.message);
 }
 
-// Test 2: Konstruktor jako argument wywołania
-console.log('\n📋 Test 2: Konstruktor jako argument wywołania');
+// Test 2: Constructor as call argument
+console.log('\n📋 Test 2: Constructor as call argument');
 const code2 = `
     class Address (city, country) [
         @city: String => city;
@@ -54,7 +54,7 @@ const code2 = `
         @headquarters: Address => headquarters;
     ];
     
-    # Bezpośrednie wywołanie konstruktora jako argument
+    # Direct constructor call as argument
     use Company("TechCorp", Address("San Francisco", "USA")) as company;
     
     export company;
@@ -68,13 +68,13 @@ try {
     assert.strictEqual(result2.headquarters.city, "San Francisco");
     assert.strictEqual(result2.headquarters.country, "USA");
     
-    console.log('✅ Test 2 przeszedł');
+    console.log('✅ Test 2 passed');
 } catch (err) {
-    console.log('❌ Test 2 nie przeszedł:', err.message);
+    console.log('❌ Test 2 failed:', err.message);
 }
 
-// Test 3: Walidator jako wartość domyślna
-console.log('\n📋 Test 3: Walidator jako wartość domyślna');
+// Test 3: Validator as default value
+console.log('\n📋 Test 3: Validator as default value');
 const code3 = `
     class Config [
         @host: String => "localhost";
@@ -105,18 +105,18 @@ try {
     assert.strictEqual(result3.s2.config.host, "production.com");
     assert.strictEqual(result3.s2.config.port, 443);
     
-    console.log('✅ Test 3 przeszedł');
+    console.log('✅ Test 3 passed');
 } catch (err) {
-    console.log('❌ Test 3 nie przeszedł:', err.message);
+    console.log('❌ Test 3 failed:', err.message);
 }
 
-// Test 4: Spread operator w tablicach
-console.log('\n📋 Test 4: Spread operator w tablicach');
+// Test 4: Spread operator in arrays
+console.log('\n📋 Test 4: Spread operator in arrays');
 const code4 = `
     use [@* => "value1"; @* => "value2";] as arr1;
     use [@* => "value3"; @* => "value4";] as arr2;
     
-    # Spread w tablicy
+    # Spread in array
     use [@* => "start"; ...arr1; @* => "middle"; ...arr2; @* => "end";] as combined;
     
     export combined;
@@ -128,13 +128,13 @@ try {
     
     assert.deepStrictEqual(result4, ["start", "value1", "value2", "middle", "value3", "value4", "end"]);
     
-    console.log('✅ Test 4 przeszedł');
+    console.log('✅ Test 4 passed');
 } catch (err) {
-    console.log('❌ Test 4 nie przeszedł:', err.message);
+    console.log('❌ Test 4 failed:', err.message);
 }
 
-// Test 5: Głęboko zagnieżdżone konstruktory
-console.log('\n📋 Test 5: Głęboko zagnieżdżone konstruktory');
+// Test 5: Deeply nested constructors
+console.log('\n📋 Test 5: Deeply nested constructors');
 const code5 = `
     class Coordinates (lat, lon) [
         @lat: Number => lat ? 0.0;
@@ -160,8 +160,8 @@ const code5 = `
 
 try {
     const result5 = BCON.parse(code5);
-    console.log('Office 1 (wszystkie defaults):', JSON.stringify(result5.o1, null, 2));
-    console.log('Office 2 (pełna hierarchia):', JSON.stringify(result5.o2, null, 2));
+    console.log('Office 1 (all defaults):', JSON.stringify(result5.o1, null, 2));
+    console.log('Office 2 (full hierarchy):', JSON.stringify(result5.o2, null, 2));
     
     assert.strictEqual(result5.o1.name, "HQ");
     assert.strictEqual(result5.o1.address.street, "Main St");
@@ -175,10 +175,10 @@ try {
     assert.strictEqual(result5.o2.address.coords.lat, 50.0647);
     assert.strictEqual(result5.o2.address.coords.lon, 19.9450);
     
-    console.log('✅ Test 5 przeszedł');
+    console.log('✅ Test 5 passed');
 } catch (err) {
-    console.log('❌ Test 5 nie przeszedł:', err.message);
+    console.log('❌ Test 5 failed:', err.message);
 }
 
 console.log('\n' + '='.repeat(70));
-console.log('\n✅ Wszystkie testy zakończone!\n');
+console.log('\n✅ All tests completed!\n');

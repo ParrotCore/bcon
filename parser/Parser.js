@@ -1,6 +1,6 @@
 /**
- * BCON Parser - Analiza składniowa
- * Tworzy AST (Abstract Syntax Tree) z tokenów
+ * BCON Parser - Syntax Analysis
+ * Creates AST (Abstract Syntax Tree) from tokens
  */
 
 const { existsSync, lstatSync } = require('node:fs');
@@ -15,28 +15,28 @@ class Parser {
     }
 
     /**
-     * Pobiera aktualny token
+     * Gets current token
      */
     current() {
         return this.tokens[this.pos];
     }
 
     /**
-     * Pobiera następny token i przesuwa pozycję
+     * Gets next token and advances position
      */
     next() {
         return this.tokens[this.pos++];
     }
 
     /**
-     * Sprawdza czy jest jeszcze token
+     * Checks if there are more tokens
      */
     hasNext() {
         return this.pos < this.tokens.length;
     }
 
     /**
-     * Rzuca błąd składni
+     * Throws syntax error
      */
     error(message, token = this.current()) {
         if (!token) {
@@ -51,7 +51,7 @@ class Parser {
     }
 
     /**
-     * Oczekuje określonego typu tokena
+     * Expects specific token type
      */
     expect(type, errorMessage) {
         const token = this.next();
@@ -65,15 +65,23 @@ class Parser {
     }
 
     /**
-     * Sprawdza typ aktualnego tokena bez przesuwania
+     * Checks current token type without advancing
      */
     check(type) {
-        const token = this.current();
+        const token = this.tokens[this.pos];
         return token && token.type === type;
+    }
+    
+    /**
+     * Checks if current token is one of the given types
+     */
+    checkAny(...types) {
+        const token = this.tokens[this.pos];
+        return token && types.includes(token.type);
     }
 
     /**
-     * Parsuje cały moduł BCON
+     * Parses complete BCON module
      */
     parse() {
         const ast = {
@@ -85,7 +93,7 @@ class Parser {
             hasExplicitExport: false
         };
 
-        // Parsuj import, use, class i luźne wyrażenia
+        // Parse import, use, class and loose expressions
         while (this.hasNext()) {
             const token = this.current();
             
@@ -96,20 +104,20 @@ class Parser {
             } else if (token.type === 'USE') {
                 ast.uses.push(this.parseUse());
             } else if (token.type === 'EXPORT') {
-                // export keyword - parsuj wartość eksportu
+                // export keyword - parse export value
                 this.next();
                 ast.hasExplicitExport = true;
                 ast.body = this.parseValue();
                 this.expect('SEMICOLON', 'Expected semicolon after export');
                 break;
             } else {
-                // Pozwól na luźne wyrażenia (nieużywane wartości) - parsuj i ignoruj
+                // Allow loose expressions (unused values) - parse and ignore
                 try {
                     this.parseValue();
                     this.expect('SEMICOLON', 'Expected semicolon after expression');
-                    // Wyrażenie zostanie zignorowane - nie dodajemy do AST
+                    // Expression will be ignored - not added to AST
                 } catch (e) {
-                    // Jeśli nie da się sparsować jako wartość, to prawdziwy błąd
+                    // If can't be parsed as value, it's a real error
                     this.error('Expected import, class, use, export, or valid expression', token);
                 }
             }
@@ -119,17 +127,17 @@ class Parser {
     }
 
     /**
-     * Parsuje wyrażenie import
+     * Parses import expression
      */
     parseImport() {
         this.expect('IMPORT');
         
-        // Jeśli zaczyna się od [, parsuj najpierw i sprawdź 'as' czy 'from'
+        // If starts with [, parse first and check for 'as' or 'from'
         if (this.check('LBRACKET')) {
-            // Zapamietaj pozycję
+            // Remember position
             const startPos = this.pos;
             
-            // Parsuj jako binding (destrukturyzacja)
+            // Parse as binding (destructuring)
             const possibleBinding = this.parseBinding();
             
             if (this.check('FROM')) {
@@ -166,20 +174,20 @@ class Parser {
     }
 
     /**
-     * Parsuje wyrażenie use
+     * Parses use expression
      */
     parseUse() {
         this.expect('USE');
         
-        // Jeśli zaczyna się od [, musimy sprawdzić, czy to destrukturyzacja czy wartość
+        // If starts with [, we need to check if it's destructuring or value
         if (this.check('LBRACKET')) {
-            // Zajrzyj do środka, aby określić, czy to destrukturyzacja czy obiekt/tablica
+            // Peek inside to determine if it's destructuring or object/array
             const nextToken = this.tokens[this.pos + 1];
             const isDestructuring = nextToken && 
                 (nextToken.type === 'IDENTIFIER' || nextToken.type === 'LBRACKET' || nextToken.type === 'SEMICOLON' || nextToken.type === 'SKIP');
             
             if (isDestructuring) {
-                // Sprawdź jeszcze dokładniej - jeśli ma @key to na pewno wartość, nie destrukturyzacja
+                // Check more carefully - if it has @key it's definitely a value, not destructuring
                 const hasObjectKeys = nextToken.type === 'ASSOC_KEY' || nextToken.type === 'NUMERIC_KEY';
                 
                 if (!hasObjectKeys) {
@@ -197,7 +205,7 @@ class Parser {
                             binding
                         };
                     } else if (this.check('AS')) {
-                        // To jednak była wartość - błąd w logice, ale spróbuj obsłużyć
+                        // This was actually a value - logic error, but try to handle
                         this.error('Cannot use destructuring syntax with "as" keyword', this.current());
                     } else {
                         this.error('Expected "from" after bindings', this.current());
@@ -288,7 +296,7 @@ class Parser {
     }
 
     /**
-     * Parsuje argumenty wywołania (konstruktora)
+     * Parses call arguments (constructor)
      */
     parseArguments() {
         this.expect('LPAREN');
@@ -310,7 +318,7 @@ class Parser {
     }
 
     /**
-     * Parsuje pojedynczy argument
+     * Parses single argument
      */
     parseArgument() {
         let isSpread = false;
@@ -330,7 +338,7 @@ class Parser {
     }
 
     /**
-     * Parsuje binding (nazwa lub destrukturyzacja)
+     * Parses binding (name or destructuring)
      */
     parseBinding() {
         const token = this.current();
@@ -349,7 +357,7 @@ class Parser {
     }
 
     /**
-     * Parsuje destrukturyzację
+     * Parses destructuring
      */
     parseDestructuring(path = []) {
         this.expect('LBRACKET');
@@ -364,7 +372,7 @@ class Parser {
                 this.next();
 
                 if (this.check('ARROW')) {
-                    // alias => źródło
+                    // alias => source
                     this.next();
                     const source = this.current();
                     
@@ -377,15 +385,15 @@ class Parser {
                         });
                         this.expect('SEMICOLON', 'Expected semicolon in destructuring');
                     } else if (source.type === 'LBRACKET') {
-                        // Zagnieżdżona destrukturyzacja
+                        // Nested destructuring
                         const nested = this.parseDestructuring([...path, name]);
                         bindings.push(...nested.bindings);
-                        // Semicolon jest już obsłużony w rekurencji
+                        // Semicolon already handled in recursion
                     } else {
                         this.error('Expected identifier or [ after =>', source);
                     }
                 } else if (this.check('SEMICOLON')) {
-                    // Prosta binding - dla tablicy użyj indeksu
+                    // Simple binding - for array use index
                     bindings.push({
                         type: 'DestructuringBinding',
                         alias: name,
@@ -394,7 +402,7 @@ class Parser {
                     arrayIndex++;
                     this.next(); // skip semicolon
                 } else if (this.check('RBRACKET')) {
-                    // Ostatni element bez średnika
+                    // Last element without semicolon
                     bindings.push({
                         type: 'DestructuringBinding',
                         alias: name,
@@ -410,11 +418,11 @@ class Parser {
                 bindings.push(...nested.bindings);
                 arrayIndex++;
             } else if (token.type === 'SEMICOLON') {
-                // Pusty element
+                // Empty element
                 this.next();
                 arrayIndex++;
             } else if (token.type === 'SKIP') {
-                // Słowo kluczowe 'skip' - pomin element
+                // Skip keyword - skip element
                 this.next();
                 this.expect('SEMICOLON', 'Expected semicolon after skip');
                 arrayIndex++;
@@ -432,19 +440,19 @@ class Parser {
     }
 
     /**
-     * Parsuje wartość (literal, identifier, path, lub obiekt)
+     * Parses value (literal, identifier, path, or object)
      */
     parseValue() {
         return this.parseExpression();
     }
 
     /**
-     * Parsuje wyrażenie z operatorem ? (nullish coalescing)
+     * Parses expression with ? operator (nullish coalescing)
      */
     parseExpression() {
         let left = this.parsePrimaryValue();
         
-        // Obsługa operatora ? (zwraca lewą stronę jeśli istnieje, prawą jeśli nie)
+        // Handle ? operator (returns left side if exists, right otherwise)
         if (this.check('QUESTION')) {
             this.next();
             const right = this.parsePrimaryValue();
@@ -459,7 +467,7 @@ class Parser {
     }
 
     /**
-     * Parsuje podstawową wartość
+     * Parses primary value
      */
     parsePrimaryValue() {
         const token = this.current();
@@ -468,12 +476,12 @@ class Parser {
             this.error('Expected value');
         }
 
-        // Obiekty i tablice
+        // Objects and arrays
         if (token.type === 'LBRACKET') {
             return this.parseObject();
         }
 
-        // Literały
+        // Literals
         if (this.isLiteral(token)) {
             this.next();
             return this.parseLiteral(token);
@@ -494,7 +502,7 @@ class Parser {
             const name = token.value;
             this.next();
             
-            // Sprawdź czy po identyfikatorze jest ( - może to konstruktor
+            // Check if identifier is followed by ( - might be constructor
             if (this.check('LPAREN')) {
                 const args = this.parseArguments();
                 return {
@@ -505,7 +513,7 @@ class Parser {
                 };
             }
             
-            // Sprawdź czy po identyfikatorze jest [ - może to instancja klasy
+            // Check if identifier is followed by [ - might be class instance
             if (this.check('LBRACKET')) {
                 const obj = this.parseObject();
                 return {
@@ -527,7 +535,7 @@ class Parser {
     }
 
     /**
-     * Sprawdza czy token jest literałem
+     * Checks if token is a literal
      */
     isLiteral(token) {
         return ['STRING', 'NUMBER', 'BIGINT', 'BOOLEAN', 'NULL', 
@@ -535,7 +543,7 @@ class Parser {
     }
 
     /**
-     * Parsuje obiekt lub tablicę
+     * Parses object or array
      */
     parseObject() {
         this.expect('LBRACKET');
@@ -546,12 +554,12 @@ class Parser {
         while (this.hasNext() && !this.check('RBRACKET')) {
             const keyToken = this.current();
             
-            // Obsługa spread operator (dla tablic i obiektów)
+            // Handle spread operator (for arrays and objects)
             if (keyToken.type === 'SPREAD') {
-                // Pozwól na spread w tablicach lub gdy typ nie jest jeszcze określony
+                // Allow spread in arrays or when type is not yet determined
                 if (isArray === null) {
-                    // Będziemy musieli określić typ na podstawie wartości spread
-                    // Na razie pozwól na spread
+                    // We'll need to determine type based on spread value
+                    // For now allow spread
                 }
                 
                 this.next(); // skip ...
@@ -566,7 +574,7 @@ class Parser {
                 continue;
             }
             
-            // Wykryj typ (array vs object)
+            // Detect type (array vs object)
             if (keyToken.type === 'NUMERIC_KEY') {
                 if (isArray === false) {
                     this.error('Cannot mix array and object syntax', keyToken);
@@ -609,7 +617,7 @@ class Parser {
     }
 
     /**
-     * Parsuje literał i zwraca node AST z wartością
+     * Parses literal and returns AST node with value
      */
     parseLiteral(token) {
         const node = {
@@ -621,7 +629,7 @@ class Parser {
 
         switch (token.type) {
             case 'STRING':
-                node.value = token.value.slice(1, -1); // usuń cudzysłowy
+                node.value = token.value.slice(1, -1); // remove quotes
                 break;
 
             case 'NUMBER':
@@ -664,16 +672,16 @@ class Parser {
     }
 
     /**
-     * Parsuje liczby (obsługuje ES2023 notacje)
+     * Parses numbers (supports ES2023 notations)
      */
     parseNumber(str) {
-        // Usuń podkreślenia
+        // Remove underscores
         str = str.replace(/_/g, '');
         return Number(str);
     }
 
     /**
-     * Parsuje literał daty
+     * Parses date literal
      */
     parseDateLiteral(token) {
         const dateStr = token.value.slice(1, -6); // usuń " i ".date
@@ -681,7 +689,7 @@ class Parser {
     }
 
     /**
-     * Parsuje literał pliku
+     * Parses file literal
      */
     parseFileLiteral(token) {
         const parts = token.value.match(/"(.+)"\.(.+)/);
@@ -692,26 +700,26 @@ class Parser {
         const [, pathStr, encoding] = parts;
         const normalizedEncoding = encoding.replace(/-/g, '');
 
-        // Sprawdź encoding
+        // Check encoding
         if (!Buffer.isEncoding(normalizedEncoding)) {
             throw new Error(
                 `Unknown encoding "${encoding}" at line ${token.line}, column ${token.column}`
             );
         }
 
-        // Rozwiąż ścieżkę
+        // Resolve path
         const absolutePath = resolvePath(pathStr) === pathStr
             ? pathStr
             : joinPath(this.config.defaultPath || process.cwd(), pathStr);
 
-        // Sprawdź istnienie pliku
+        // Check file existence
         if (!existsSync(absolutePath)) {
             throw new Error(
                 `File "${absolutePath}" does not exist at line ${token.line}, column ${token.column}`
             );
         }
 
-        // Sprawdź czy to plik
+        // Check if it's a file
         const stats = lstatSync(absolutePath);
         if (!stats.isFile()) {
             throw new TypeError(
@@ -726,7 +734,7 @@ class Parser {
     }
 
     /**
-     * Parsuje literał RegExp
+     * Parses RegExp literal
      */
     parseRegExpLiteral(token) {
         const match = token.value.match(/^\/(.*)\/([igsmuy]*)$/);
@@ -739,7 +747,7 @@ class Parser {
     }
 
     /**
-     * Parsuje definicję klasy
+     * Parses class definition
      */
     parseClass() {
         this.expect('CLASS');
@@ -747,13 +755,13 @@ class Parser {
         const nameToken = this.expect('IDENTIFIER', 'Expected class name');
         const className = nameToken.value;
         
-        // Parametry konstruktora (opcjonalne)
+        // Constructor parameters (optional)
         let parameters = [];
         if (this.check('LPAREN')) {
             parameters = this.parseClassParameters();
         }
         
-        // Dziedziczenie lub kompozycja
+        // Inheritance or composition
         let baseClass = null;
         let mixins = [];
         
@@ -768,13 +776,13 @@ class Parser {
             const mixinToken = this.expect('IDENTIFIER', 'Expected mixin class name');
             mixins.push(mixinToken.value);
             
-            // Możliwa lista mixinów
+            // Possible mixin list
             while (this.check('IDENTIFIER')) {
                 mixins.push(this.next().value);
             }
         }
         
-        // Parsuj ciało klasy [...]
+        // Parse class body [...]
         this.expect('LBRACKET', 'Expected [ to start class body');
         
         const fields = [];
@@ -798,7 +806,7 @@ class Parser {
     }
 
     /**
-     * Parsuje parametry klasy (konstruktora)
+     * Parses class parameters (constructor)
      */
     parseClassParameters() {
         this.expect('LPAREN');
@@ -808,7 +816,7 @@ class Parser {
             const param = this.parseClassParameter();
             params.push(param);
             
-            // Jeśli nie ma już więcej parametrów, przerwij
+            // If no more parameters, break
             if (this.check('COMMA')) {
                 this.next();
             } else if (!this.check('RPAREN')) {
@@ -821,7 +829,7 @@ class Parser {
     }
 
     /**
-     * Parsuje pojedynczy parametr klasy
+     * Parses single class parameter
      */
     parseClassParameter() {
         let isSpread = false;
@@ -841,13 +849,13 @@ class Parser {
     }
 
     /**
-     * Parsuje pole klasy
+     * Parses class field
      */
     parseClassField() {
         const keyToken = this.expect('ASSOC_KEY', 'Expected @key in class field');
-        const fieldName = keyToken.value.substring(1); // usuń @
+        const fieldName = keyToken.value.substring(1); // remove @
         
-        // Opcjonalne pole?
+        // Optional field?
         let isOptional = false;
         if (this.check('QUESTION')) {
             this.next();
@@ -856,10 +864,10 @@ class Parser {
         
         this.expect('COLON', 'Expected : after field name');
         
-        // Parsuj typ
+        // Parse type
         const fieldType = this.parseType();
         
-        // Wartość domyślna (tylko =>)
+        // Default value (only =>)
         let defaultValue = null;
         if (this.check('ARROW')) {
             this.next();
@@ -878,19 +886,19 @@ class Parser {
     }
 
     /**
-     * Parsuje typ pola
+     * Parses field type
      */
     parseType() {
         const token = this.current();
         
-        // Typy prymitywne
+        // Primitive types
         if (token.type === 'IDENTIFIER') {
             const typeName = token.value;
             this.next();
             
-            // Obsługa generic types <T>
+            // Handle generic types <T>
             if (this.check('LBRACKET')) {
-                // Dla uproszczenia nie implementujemy jeszcze generics
+                // For simplicity, not implementing generics yet
             }
             
             return {
@@ -899,11 +907,11 @@ class Parser {
             };
         }
         
-        // Typ tablicowy [type1, type2, ...] lub typ obiektowy
+        // Array type [type1, type2, ...] or object type
         if (token.type === 'LBRACKET') {
             this.next();
             
-            // Sprawdź czy to struktura obiektowa (ma @key) czy tablica/tuple
+            // Check if it's object structure (has @key) or array/tuple
             if (this.check('ASSOC_KEY')) {
                 const fields = [];
                 
@@ -944,7 +952,7 @@ class Parser {
                 };
             }
             
-            // W przeciwnym razie to tuple lub array
+            // Otherwise it's tuple or array
             const elementTypes = [];
             let isTuple = false;
             
@@ -968,12 +976,12 @@ class Parser {
             };
         }
         
-        // Typ enum (lista stringów)
+        // Enum type (list of strings)
         if (token.type === 'STRING') {
-            const values = [token.value.slice(1, -1)]; // usuń cudzysłowy
+            const values = [token.value.slice(1, -1)]; // remove quotes
             this.next();
             
-            // Jeśli nie ma przecinka, to pojedynczy string literal type
+            // If no comma, it's a single string literal type
             return {
                 type: 'LiteralType',
                 value: values[0],

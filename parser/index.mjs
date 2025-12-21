@@ -1,5 +1,5 @@
 /**
- * Nowy parser BCON - Główny plik (ESM version)
+ * New BCON parser - Main file (ESM version)
  */
 
 import Lexer from './Lexer.mjs';
@@ -8,24 +8,24 @@ import Evaluator from './Evaluator.mjs';
 import stringify from './Stringifier.mjs';
 
 /**
- * Główna funkcja parsująca BCON
+ * Main BCON parsing function
  */
 function parse(source, config = {}) {
-    // Użyj globalnej konfiguracji jeśli dostępna
+    // Use global configuration if available
     const finalConfig = {
         defaultPath: config.defaultPath || globalThis.__bconConfig?.default_path || process.cwd(),
         defaultEncoding: config.defaultEncoding || globalThis.__bconConfig?.default_encoding || 'utf-8'
     };
 
-    // Leksykalna analiza (tokenizacja)
+    // Lexical analysis (tokenization)
     const lexer = new Lexer(source);
     const tokens = lexer.tokenize();
 
-    // Parsowanie (tworzenie AST)
+    // Parsing (creating AST)
     const parser = new Parser(tokens, source, finalConfig);
     const ast = parser.parse();
 
-    // Ewaluacja (wykonanie AST)
+    // Evaluation (executing AST)
     const evaluator = new Evaluator(finalConfig);
     const result = evaluator.evaluate(ast, parse);
 

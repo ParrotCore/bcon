@@ -9,7 +9,7 @@ BCON.init({
     }
 });
 
-console.log('\n🧪 Testowanie walidacji typów w konstruktorach i walidatorach\n');
+console.log('\n🧪 Testing type validation in constructors and validators\n');
 console.log('='.repeat(70));
 
 let passed = 0;
@@ -28,7 +28,7 @@ function test(name, fn) {
 }
 
 // Test 1: Walidacja typów w walidatorze (klasa bez parametrów)
-test('Walidator: poprawne typy', () => {
+test('Validator: correct types', () => {
     const code = `
         class Config [
             @host: String => "localhost";
@@ -46,12 +46,12 @@ test('Walidator: poprawne typy', () => {
     `;
     
     const result = BCON.parse(code);
-    if (result.host !== "example.com") throw new Error('Niepoprawna wartość host');
-    if (result.port !== 3000) throw new Error('Niepoprawna wartość port');
-    if (result.debug !== false) throw new Error('Niepoprawna wartość debug');
+    if (result.host !== "example.com") throw new Error('Incorrect host value');
+    if (result.port !== 3000) throw new Error('Incorrect port value');
+    if (result.debug !== false) throw new Error('Incorrect debug value');
 });
 
-test('Walidator: błędny typ String', () => {
+test('Validator: incorrect String type', () => {
     const code = `
         class Config [
             @host: String => "localhost";
@@ -68,15 +68,15 @@ test('Walidator: błędny typ String', () => {
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu');
+        throw new Error('Should throw type validation error');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-test('Walidator: błędny typ Number', () => {
+test('Validator: incorrect Number type', () => {
     const code = `
         class Config [
             @host: String => "localhost";
@@ -93,15 +93,15 @@ test('Walidator: błędny typ Number', () => {
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu');
+        throw new Error('Should throw type validation error');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-test('Walidator: błędny typ Boolean', () => {
+test('Validator: incorrect Boolean type', () => {
     const code = `
         class Config [
             @debug: Boolean => False;
@@ -116,16 +116,16 @@ test('Walidator: błędny typ Boolean', () => {
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu');
+        throw new Error('Should throw type validation error');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-// Test 2: Walidacja typów w konstruktorze (klasa z parametrami)
-test('Konstruktor: poprawne typy', () => {
+// Test 2: Type validation in constructor (class with parameters)
+test('Constructor: correct types', () => {
     const code = `
         class User (name, age, active) [
             @name: String => name ? "Unknown";
@@ -139,12 +139,12 @@ test('Konstruktor: poprawne typy', () => {
     `;
     
     const result = BCON.parse(code);
-    if (result.name !== "John") throw new Error('Niepoprawna wartość name');
-    if (result.age !== 25) throw new Error('Niepoprawna wartość age');
-    if (result.active !== true) throw new Error('Niepoprawna wartość active');
+    if (result.name !== "John") throw new Error('Incorrect name value');
+    if (result.age !== 25) throw new Error('Incorrect age value');
+    if (result.active !== true) throw new Error('Incorrect active value');
 });
 
-test('Konstruktor: błędny typ String z operatorem ?', () => {
+test('Constructor: incorrect String type with ? operator', () => {
     const code = `
         class User (name, age) [
             @name: String => name ? "Unknown";
@@ -158,15 +158,15 @@ test('Konstruktor: błędny typ String z operatorem ?', () => {
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu');
+        throw new Error('Should throw type validation error');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-test('Konstruktor: błędny typ Number z operatorem ?', () => {
+test('Constructor: incorrect Number type with ? operator', () => {
     const code = `
         class User (name, age) [
             @name: String => name ? "Unknown";
@@ -180,15 +180,15 @@ test('Konstruktor: błędny typ Number z operatorem ?', () => {
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu');
+        throw new Error('Should throw type validation error');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-test('Konstruktor: operator ? z Null używa wartości domyślnej', () => {
+test('Constructor: ? operator with Null uses default value', () => {
     const code = `
         class User (name, age) [
             @name: String => name ? "Guest";
@@ -201,11 +201,11 @@ test('Konstruktor: operator ? z Null używa wartości domyślnej', () => {
     `;
     
     const result = BCON.parse(code);
-    if (result.name !== "Guest") throw new Error('Oczekiwano "Guest", dostano: ' + result.name);
-    if (result.age !== 18) throw new Error('Oczekiwano 18, dostano: ' + result.age);
+    if (result.name !== "Guest") throw new Error('Expected "Guest", got: ' + result.name);
+    if (result.age !== 18) throw new Error('Expected 18, got: ' + result.age);
 });
 
-test('Konstruktor: błędny typ w wartości domyślnej', () => {
+test('Constructor: incorrect type in default value', () => {
     const code = `
         class User (name) [
             @name: String => name ? 12345;
@@ -218,16 +218,16 @@ test('Konstruktor: błędny typ w wartości domyślnej', () => {
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu dla wartości domyślnej');
+        throw new Error('Should throw type validation error for default value');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-// Test 3: Walidacja typów zagnieżdżonych
-test('Walidator: zagnieżdżone obiekty - poprawne typy', () => {
+// Test 3: Nested type validation
+test('Validator: nested objects - correct types', () => {
     const code = `
         class Coordinates [
             @lat: Number => 0;
@@ -254,11 +254,11 @@ test('Walidator: zagnieżdżone obiekty - poprawne typy', () => {
     `;
     
     const result = BCON.parse(code);
-    if (result.name !== "Warsaw") throw new Error('Niepoprawna nazwa miasta');
-    if (result.coords.lat !== 52.2297) throw new Error('Niepoprawna szerokość geograficzna');
+    if (result.name !== "Warsaw") throw new Error('Incorrect city name');
+    if (result.coords.lat !== 52.2297) throw new Error('Incorrect latitude');
 });
 
-test('Walidator: zagnieżdżone obiekty - błędny typ w zagnieżdżeniu', () => {
+test('Validator: nested objects - incorrect type in nesting', () => {
     const code = `
         class Coordinates [
             @lat: Number => 0;
@@ -286,15 +286,15 @@ test('Walidator: zagnieżdżone obiekty - błędny typ w zagnieżdżeniu', () =>
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu w zagnieżdżonym obiekcie');
+        throw new Error('Should throw type validation error in nested object');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-test('Konstruktor: zagnieżdżone obiekty z parametrami', () => {
+test('Constructor: nested objects with parameters', () => {
     const code = `
         class Coordinates (lat, lon) [
             @latitude: Number => lat ? 0;
@@ -317,12 +317,12 @@ test('Konstruktor: zagnieżdżone obiekty z parametrami', () => {
     `;
     
     const result = BCON.parse(code);
-    if (result.name !== "Warsaw") throw new Error('Niepoprawna nazwa');
-    if (result.coords.latitude !== 52.2297) throw new Error('Niepoprawna latitude');
-    if (result.coords.longitude !== 21.0122) throw new Error('Niepoprawna longitude');
+    if (result.name !== "Warsaw") throw new Error('Incorrect name');
+    if (result.coords.latitude !== 52.2297) throw new Error('Incorrect latitude');
+    if (result.coords.longitude !== 21.0122) throw new Error('Incorrect longitude');
 });
 
-test('Konstruktor: błędny typ w zagnieżdżonym konstruktorze', () => {
+test('Constructor: incorrect type in nested constructor', () => {
     const code = `
         class Coordinates (lat, lon) [
             @latitude: Number => lat;
@@ -336,16 +336,16 @@ test('Konstruktor: błędny typ w zagnieżdżonym konstruktorze', () => {
     
     try {
         BCON.parse(code);
-        throw new Error('Powinien rzucić błąd walidacji typu');
+        throw new Error('Should throw type validation error');
     } catch (e) {
         if (!e.message.includes('Type mismatch')) {
-            throw new Error('Oczekiwano błędu Type mismatch, dostano: ' + e.message);
+            throw new Error('Expected Type mismatch error, got: ' + e.message);
         }
     }
 });
 
-// Test 4: Walidacja tablic
-test('Walidator: tablica - poprawne typy', () => {
+// Test 4: Array validation
+test('Validator: array - correct types', () => {
     const code = `
         class Team [
             @name: String => "Team";
@@ -367,11 +367,11 @@ test('Walidator: tablica - poprawne typy', () => {
     `;
     
     const result = BCON.parse(code);
-    if (!Array.isArray(result.members)) throw new Error('members nie jest tablicą');
-    if (result.members.length !== 3) throw new Error('Niepoprawna liczba członków');
+    if (!Array.isArray(result.members)) throw new Error('members is not an array');
+    if (result.members.length !== 3) throw new Error('Incorrect number of members');
 });
 
-test('Konstruktor: tablica przez spread - poprawne typy', () => {
+test('Constructor: array via spread - correct types', () => {
     const code = `
         class Team (name, ...members) [
             @name: String => name;
@@ -384,8 +384,8 @@ test('Konstruktor: tablica przez spread - poprawne typy', () => {
     `;
     
     const result = BCON.parse(code);
-    if (!Array.isArray(result.members)) throw new Error('members nie jest tablicą');
-    if (result.members.length !== 3) throw new Error('Niepoprawna liczba członków');
+    if (!Array.isArray(result.members)) throw new Error('members is not an array');
+    if (result.members.length !== 3) throw new Error('Incorrect number of members');
 });
 
 console.log('\n' + '='.repeat(70));

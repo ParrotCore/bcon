@@ -1,6 +1,6 @@
 /**
- * BCON Lexer - Tokenizacja kodu BCON
- * Odpowiedzialny za rozbicie tekstu na tokeny
+ * BCON Lexer - BCON code tokenization
+ * Responsible for splitting text into tokens
  */
 
 class Lexer {
@@ -10,10 +10,13 @@ class Lexer {
         this.line = 1;
         this.column = 1;
         this.tokens = [];
+        
+        // Cache regex patterns for better performance
+        this._cachedPatterns = null;
     }
 
     /**
-     * Usuwa komentarze z kodu źródłowego
+     * Removes comments from source code
      */
     removeComments(text) {
         text = text.replace(/\r\n|\r(?!\n)/g, '\n');
@@ -28,7 +31,7 @@ class Lexer {
             const char = text[i];
             const next = text[i + 1];
 
-            // Wykrywanie stringów
+            // String detection
             if (char === '"' && prevChar !== '\\' && !isSingleLineComment && !isMultilineComment) {
                 isString = !isString;
                 output += char;
@@ -36,7 +39,7 @@ class Lexer {
                 continue;
             }
 
-            // Wykrywanie komentarzy wieloliniowych
+            // Multiline comment detection
             if (char === '\'' && prevChar !== '\\' && !isString && !isSingleLineComment) {
                 isMultilineComment = !isMultilineComment;
                 output += char === '\n' ? '\n' : ' ';
@@ -44,7 +47,7 @@ class Lexer {
                 continue;
             }
 
-            // Wykrywanie komentarzy jednoliniowych
+            // Single line comment detection
             if (char === '#' && !isString && !isMultilineComment && !isSingleLineComment) {
                 isSingleLineComment = true;
                 output += ' ';
@@ -52,7 +55,7 @@ class Lexer {
                 continue;
             }
 
-            // Koniec komentarza jednoliniowego
+            // End of single line comment
             if (char === '\n' && isSingleLineComment) {
                 isSingleLineComment = false;
                 output += '\n';
@@ -60,7 +63,7 @@ class Lexer {
                 continue;
             }
 
-            // Dodawanie znaków
+            // Adding characters
             if (isSingleLineComment || isMultilineComment) {
                 output += char === '\n' ? '\n' : ' ';
             } else {
@@ -74,11 +77,16 @@ class Lexer {
     }
 
     /**
-     * Definicje tokenów jako regexpy
+     * Token definitions as regexps
      */
     getTokenPatterns() {
-        return [
-            // Literały
+        // Return cached patterns if available
+        if (this._cachedPatterns) {
+            return this._cachedPatterns;
+        }
+        
+        this._cachedPatterns = [
+            // Literals
             { type: 'DATE', pattern: /"[^"\n\r]*"\.date/gi },
             { type: 'FILE', pattern: /"[^"\n\r]*"\.(utf-?8|utf-?16le|base-?64|ascii|latin-?1|binary|hex)/gi },
             { type: 'STRING', pattern: /"(?:[^"\\]|\\.)*"/g },
@@ -86,7 +94,7 @@ class Lexer {
             { type: 'NUMBER', pattern: /(?:-)?(0x[A-Fa-f0-9_]+|0o[0-7_]+|0b[0-1_]+|[0-9_]*\.?[0-9_]+(?:e[+-]?[0-9_]+)?|Infinity|NaN)/g },
             { type: 'BIGINT', pattern: /(?:-)?[0-9_]+n/g },
             
-            // Keywords i literały słowne
+            // Keywords and word literals
             { type: 'BOOLEAN', pattern: /\b(True|False)\b/g },
             { type: 'NULL', pattern: /\bNull\b/g },
             { type: 'UNDEFINED', pattern: /\bUndefined\b/g },
@@ -100,17 +108,17 @@ class Lexer {
             { type: 'EXTENDS', pattern: /\bextends\b/g },
             { type: 'INCLUDES', pattern: /\bincludes\b/g },
             
-            // Symbole
+            // Symbols
             { type: 'ARROW', pattern: /=>/g },
             { type: 'SPREAD', pattern: /\.{3}/g },
             { type: 'ASSOC_KEY', pattern: /@[A-Za-z_][A-Za-z0-9_]*/g },
             { type: 'NUMERIC_KEY', pattern: /@\*/g },
             
-            // Identyfikatory
+            // Identifiers
             { type: 'PATH', pattern: /[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*|\.\d+)+/g },
             { type: 'IDENTIFIER', pattern: /[A-Za-z_][A-Za-z0-9_]*/g },
             
-            // Pozostałe symbole
+            // Remaining symbols
             { type: 'LPAREN', pattern: /\(/g },
             { type: 'RPAREN', pattern: /\)/g },
             { type: 'LBRACKET', pattern: /\[/g },
@@ -121,17 +129,19 @@ class Lexer {
             { type: 'QUESTION', pattern: /\?/g },
             { type: 'EQUALS', pattern: /=/g }
         ];
+        
+        return this._cachedPatterns;
     }
 
     /**
-     * Tokenizacja źródła
+     * Source tokenization
      */
     tokenize() {
         const cleanSource = this.removeComments(this.source);
         const patterns = this.getTokenPatterns();
         const matches = [];
 
-        // Zbierz wszystkie dopasowania
+        // Collect all matches
         for (const { type, pattern } of patterns) {
             const regex = new RegExp(pattern.source, pattern.flags);
             let match;
@@ -146,10 +156,10 @@ class Lexer {
             }
         }
 
-        // Sortuj po indeksie
+        // Sort by index
         matches.sort((a, b) => a.index - b.index);
 
-        // Filtruj nakładające się dopasowania (wybierz najdłuższe)
+        // Filter overlapping matches (choose longest)
         const filtered = [];
         let lastEnd = -1;
 
@@ -158,7 +168,7 @@ class Lexer {
                 filtered.push(match);
                 lastEnd = match.index + match.length;
             } else if (match.index === filtered[filtered.length - 1].index) {
-                // Jeśli na tym samym miejscu, wybierz dłuższe dopasowanie
+                // If at same position, choose longer match
                 if (match.length > filtered[filtered.length - 1].length) {
                     filtered[filtered.length - 1] = match;
                     lastEnd = match.index + match.length;
@@ -166,35 +176,35 @@ class Lexer {
             }
         }
 
-        // Sprawdź nieoczekiwane tokeny
+        // Check for unexpected tokens
         this.checkForUnexpectedTokens(cleanSource, filtered);
 
-        // Przetwórz tokeny na obiekty z dodatkowymi danymi
+        // Process tokens into objects with additional data
         this.tokens = filtered.map(token => this.createToken(token, cleanSource));
         
         return this.tokens;
     }
 
     /**
-     * Sprawdza czy w kodzie nie ma nierozpoznanych tokenów
+     * Checks if code contains unrecognized tokens
      */
     checkForUnexpectedTokens(source, tokens) {
         let pos = 0;
         let tokenIndex = 0;
 
         while (pos < source.length) {
-            // Pomiń białe znaki
+            // Skip whitespace
             if (/\s/.test(source[pos])) {
                 pos++;
                 continue;
             }
 
-            // Sprawdź czy jesteśmy na początku tokena
+            // Check if we're at token start
             if (tokenIndex < tokens.length && pos === tokens[tokenIndex].index) {
                 pos += tokens[tokenIndex].length;
                 tokenIndex++;
             } else if (tokenIndex >= tokens.length || pos < tokens[tokenIndex].index) {
-                // Nieoczekiwany znak
+                // Unexpected character
                 const location = this.getLocation(source, pos);
                 throw new SyntaxError(
                     `Unexpected token: "${source[pos]}" at line ${location.line}, column ${location.column}`
@@ -204,7 +214,7 @@ class Lexer {
     }
 
     /**
-     * Tworzy obiekt tokena z dodatkowymi informacjami
+     * Creates token object with additional information
      */
     createToken(match, source) {
         const location = this.getLocation(source, match.index);
@@ -220,7 +230,7 @@ class Lexer {
     }
 
     /**
-     * Oblicza linię i kolumnę dla danej pozycji
+     * Calculates line and column for given position
      */
     getLocation(source, index) {
         let line = 1;

@@ -991,6 +991,354 @@ test('Unused expressions between declarations', () => {
 });
 
 // ==============================================
+// String Interpolation Tests
+// ==============================================
+
+test('Interpolate number in string', () => {
+	const code = `
+		use 42 as num;
+		export "Number: [num]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Number: 42");
+});
+
+test('Interpolate BigInt in string', () => {
+	const code = `
+		use 9007199254740991n as bignum;
+		export "BigInt: [bignum]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "BigInt: 9007199254740991");
+});
+
+test('Interpolate boolean in string', () => {
+	const code = `
+		use True as bool;
+		export "Boolean: [bool]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Boolean: true");
+});
+
+test('Interpolate Date in string', () => {
+	const code = `
+		use "2025-12-21".date as date;
+		export "Date: [date]";
+	`;
+	const result = BCON.parse(code);
+	assert(result.includes("2025"));
+	assert(result.includes("Dec"));
+});
+
+test('Interpolate RegExp in string', () => {
+	const code = `
+		use /test/gi as regex;
+		export "RegExp: [regex]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "RegExp: /test/gi");
+});
+
+test('Interpolate nested object property', () => {
+	const code = `
+		export [
+			@data => [
+				@value => 123;
+			];
+			@message => "Nested: [This.data.value]";
+		];
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.message, "Nested: 123");
+});
+
+test('Interpolate array element', () => {
+	const code = `
+		export [
+			@items => [
+				@* => "first";
+				@* => "second";
+			];
+			@message => "Array: [This.items.0]";
+		];
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.message, "Array: first");
+});
+
+test('Interpolation with null keeps placeholder', () => {
+	const code = `
+		use Null as nullVal;
+		export "Null: [nullVal]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Null: [nullVal]");
+});
+
+test('Interpolation with undefined keeps placeholder', () => {
+	const code = `
+		use Undefined as undefVal;
+		export "Undefined: [undefVal]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Undefined: [undefVal]");
+});
+
+test('Multiple interpolations in one string', () => {
+	const code = `
+		use "Alice" as name;
+		use 25 as age;
+		export "Name: [name], Age: [age]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Name: Alice, Age: 25");
+});
+
+test('Sequential interpolation (reference to interpolated string)', () => {
+	const code = `
+		export [
+			@name => "Alice";
+			@greeting => "Hello [This.name]";
+			@message => "Full: [This.greeting]";
+		];
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.message, "Full: Hello Alice");
+});
+
+test('Escape sequences in interpolated values', () => {
+	const code = `
+		use "Line1\\nLine2" as text;
+		export "Text: [text]";
+	`;
+	const result = BCON.parse(code);
+	assert(result.includes('\n'));
+	assert.strictEqual(result, "Text: Line1\nLine2");
+});
+
+test('Escaped brackets in string (no interpolation)', () => {
+	const code = `
+		export "Use \\[brackets\\] for interpolation";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Use [brackets] for interpolation");
+});
+
+test('Interpolation with ? operator - null with default', () => {
+	const code = `
+		use Null as nullVal;
+		export "Value: [nullVal ? \\"N/A\\"]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Value: N/A");
+});
+
+test('Interpolation with ? operator - undefined with default', () => {
+	const code = `
+		use Undefined as undefVal;
+		export "Value: [undefVal ? \\"not set\\"]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Value: not set");
+});
+
+test('Interpolation with ? operator - existing value ignores default', () => {
+	const code = `
+		use "actual" as val;
+		export "Value: [val ? \\"default\\"]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Value: actual");
+});
+
+test('Interpolation with ? operator - multiple in one string', () => {
+	const code = `
+		use Null as a;
+		use "exists" as b;
+		use Undefined as c;
+		export "Values: [a ? \\"A\\"], [b ? \\"B\\"], [c ? \\"C\\"]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Values: A, exists, C");
+});
+
+test('Interpolation with ? operator - in object context', () => {
+	const code = `
+		export [
+			@name => Null;
+			@message => "Hello [This.name ? \\"Guest\\"]!";
+		];
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.message, "Hello Guest!");
+});
+
+test('Interpolation with ? operator - nested property with default', () => {
+	const code = `
+		export [
+			@user => [
+				@name => Undefined;
+			];
+			@greeting => "Welcome [This.user.name ? \\"Anonymous\\"]";
+		];
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.greeting, "Welcome Anonymous");
+});
+
+test('Interpolation with ? operator - missing property with default', () => {
+	const code = `
+		export [
+			@message => "Status: [This.status ? \\"unknown\\"]";
+		];
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.message, "Status: unknown");
+});
+
+test('Interpolation with ? operator - numeric default', () => {
+	const code = `
+		use Null as count;
+		export "Count: [count ? \\"0\\"]";
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "Count: 0");
+});
+
+// ==============================================
+// Constructor Inheritance Tests
+// ==============================================
+
+test('Inheritance: Parent and child both have constructors', () => {
+	const code = `
+		class Animal (name, age) [
+			@name: String => name;
+			@age: Number => age;
+			@species: String => "Unknown";
+		];
+		
+		class Dog (name, age, breed) extends Animal [
+			@breed: String => breed;
+		];
+		
+		export Dog("Buddy", 5, "Golden Retriever");
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "Buddy");
+	assert.strictEqual(result.age, 5);
+	assert.strictEqual(result.breed, "Golden Retriever");
+	assert.strictEqual(result.species, "Unknown");
+});
+
+test('Inheritance: Child inherits parent constructor parameters', () => {
+	const code = `
+		class Person (name, age) [
+			@name: String => name;
+			@age: Number => age;
+		];
+		
+		class Employee extends Person [
+			@employeeId: String => "EMP-001";
+			@department: String => "General";
+		];
+		
+		export Employee("John", 30);
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "John");
+	assert.strictEqual(result.age, 30);
+	assert.strictEqual(result.employeeId, "EMP-001");
+	assert.strictEqual(result.department, "General");
+});
+
+test('Inheritance: Multi-level with constructors', () => {
+	const code = `
+		class LivingBeing (name) [
+			@name: String => name;
+			@alive: Boolean => True;
+		];
+		
+		class Animal (name, species) extends LivingBeing [
+			@species: String => species;
+		];
+		
+		class Dog (name, species, breed) extends Animal [
+			@breed: String => breed;
+		];
+		
+		export Dog("Max", "Canine", "Labrador");
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "Max");
+	assert.strictEqual(result.species, "Canine");
+	assert.strictEqual(result.breed, "Labrador");
+	assert.strictEqual(result.alive, true);
+});
+
+test('Inheritance: Child overrides parent field via constructor', () => {
+	const code = `
+		class Base (value) [
+			@value: String => value;
+			@category: String => "base";
+		];
+		
+		class Derived (value, category) extends Base [
+			@category: String => category;
+			@extended: Boolean => True;
+		];
+		
+		export Derived("test", "custom");
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.value, "test");
+	assert.strictEqual(result.category, "custom");
+	assert.strictEqual(result.extended, true);
+});
+
+test('Inheritance: Parent without constructor, child with constructor', () => {
+	const code = `
+		class BaseConfig [
+			@timeout: Number => 5000;
+			@retries: Number => 3;
+		];
+		
+		class CustomConfig (name) extends BaseConfig [
+			@name: String => name;
+			@custom: Boolean => True;
+		];
+		
+		export CustomConfig("MyConfig");
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "MyConfig");
+	assert.strictEqual(result.timeout, 5000);
+	assert.strictEqual(result.retries, 3);
+	assert.strictEqual(result.custom, true);
+});
+
+test('Inheritance: Constructor with default values', () => {
+	const code = `
+		class Connection (host, port) [
+			@host: String => host ? "localhost";
+			@port: Number => port ? 8080;
+		];
+		
+		class SecureConnection (host, port, cert) extends Connection [
+			@cert: String => cert ? "default.pem";
+			@secure: Boolean => True;
+		];
+		
+		export SecureConnection("example.com", Null, Null);
+	`;
+	const result = BCON.parse(code);
+	assert.strictEqual(result.host, "example.com");
+	assert.strictEqual(result.port, 8080);
+	assert.strictEqual(result.cert, "default.pem");
+	assert.strictEqual(result.secure, true);
+});
+
+// ==============================================
 // Run All Tests
 // ==============================================
 

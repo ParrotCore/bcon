@@ -1,5 +1,5 @@
 /**
- * BCON Stringifier - Przekształcanie obiektów JS na tekst BCON
+ * BCON Stringifier - Transforming JS objects to BCON text
  */
 
 const { inspect } = require('node:util');
@@ -13,7 +13,7 @@ class Stringifier {
     }
 
     /**
-     * Główna metoda stringyfikacji
+     * Main stringification method
      */
     stringify(value) {
         if (!this.isObject(value) && !Array.isArray(value)) {
@@ -24,7 +24,7 @@ class Stringifier {
     }
 
     /**
-     * Sprawdza czy wartość jest obiektem asocjacyjnym
+     * Checks if value is associative object
      */
     isObject(value) {
         return value !== null && 
@@ -35,7 +35,7 @@ class Stringifier {
     }
 
     /**
-     * Stringifikuje obiekt lub tablicę
+     * Stringifies object or array
      */
     stringifyObject(value, depth) {
         const isArray = Array.isArray(value);
@@ -56,7 +56,7 @@ class Stringifier {
         for (const [key, val] of entries) {
             result += nextIndent;
             
-            // Klucz
+            // Key
             if (isArray) {
                 result += '@*';
             } else {
@@ -65,7 +65,7 @@ class Stringifier {
             
             result += space + '=>' + space;
             
-            // Wartość
+            // Value
             if (this.isObject(val) || Array.isArray(val)) {
                 result += this.stringifyObject(val, depth + 1);
             } else {
@@ -85,7 +85,7 @@ class Stringifier {
     }
 
     /**
-     * Stringifikuje pojedynczą wartość
+     * Stringifies single value
      */
     stringifyValue(value) {
         // Replacer
@@ -122,7 +122,7 @@ class Stringifier {
         if (typeof value === 'string') {
             let escaped = value.replace(/(?<!\\)"/g, '\\"');
             
-            // Escape specjalne znaki jeśli nie ma space
+            // Escape special characters if no space
             if (!this.options.space) {
                 escaped = escaped.replace(/[\b\f\n\r\t\v]/g, match => {
                     const escapeMap = {
@@ -155,7 +155,7 @@ class Stringifier {
     }
 
     /**
-     * Generuje wcięcie dla danego poziomu
+     * Generates indentation for given depth
      */
     getIndent(depth) {
         if (!this.options.space) {
@@ -171,7 +171,7 @@ class Stringifier {
 }
 
 /**
- * Funkcja pomocnicza do stringifikacji
+ * Helper function for stringification
  */
 function stringify(value, replacer, space) {
     const stringifier = new Stringifier({ replacer, space });

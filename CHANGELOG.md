@@ -2,6 +2,61 @@
 
 All notable changes to bcon-parser will be documented in this file.
 
+## [2.1.0] - 2025-12-21
+
+### Added
+- **Class System with Type Validation** 🎉
+  - Define reusable schemas with `class` keyword
+  - Type validation for primitive types (String, Number, Boolean, BigInt, Date, RegExp, etc.)
+  - Support for nested object types and arrays
+  - Optional fields with `?` operator
+  - Default values with `=` operator
+  - Class inheritance with `extends` keyword
+  - Composition support (foundation for future `includes` keyword)
+  - Automatic type checking at parse time
+  - Comprehensive error messages for type mismatches, missing fields, and unknown fields
+  - Deep recursive validation for nested class instances
+  - Class names can be used as types in field definitions
+  
+- **New Lexer Tokens**
+  - `CLASS` - Class definition keyword
+  - `EXTENDS` - Inheritance keyword
+  - `INCLUDES` - Composition keyword (reserved for future use)
+  - `COLON` - Type annotation separator
+  - `QUESTION` - Optional field marker
+  - `EQUALS` - Default value assignment
+
+- **Parser Enhancements**
+  - `parseClass()` - Parse class declarations with fields, inheritance, and mixins
+  - `parseClassField()` - Parse individual class fields with type annotations
+  - `parseType()` - Parse type definitions (primitives, objects, arrays, tuples)
+  - `ClassInstance` AST node type for validated class instances
+  - **Loose expressions support** - Allow unused literals and expressions without errors
+
+- **Evaluator Enhancements**
+  - `registerClass()` - Register class definitions with inheritance resolution
+  - `createInstance()` - Create validated class instances
+  - `validateType()` - Comprehensive type validation system
+  - `validateTypeReference()` - Deep recursive validation for nested class types
+  - Type validators for all primitive and complex types
+  - Detailed error messages with field paths
+
+### Changed
+- Parser now allows unused expressions (literals, objects, arrays) in files
+  - Useful for development, debugging, and leaving temporary values
+  - Similar to JavaScript's behavior with expression statements
+  - Expressions are parsed and validated but not evaluated
+
+### Tests
+- 13 comprehensive class system tests
+- 5 loose expressions tests
+- All 68 tests passing with full coverage
+
+### Changed
+- Updated README.md with classes feature in key features list
+- Enhanced overview section to highlight type validation
+- Added "Classes" to table of contents
+
 ## [2.0.0] - 2025-12-17
 
 ### Changed

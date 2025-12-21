@@ -80,16 +80,19 @@ class Parser {
             type: 'Module',
             imports: [],
             uses: [],
+            classes: [],
             body: null,
             hasExplicitExport: false
         };
 
-        // Parsuj import i use
+        // Parsuj import, use, class i luźne wyrażenia
         while (this.hasNext()) {
             const token = this.current();
             
             if (token.type === 'IMPORT') {
                 ast.imports.push(this.parseImport());
+            } else if (token.type === 'CLASS') {
+                ast.classes.push(this.parseClass());
             } else if (token.type === 'USE') {
                 ast.uses.push(this.parseUse());
             } else if (token.type === 'EXPORT') {
@@ -100,7 +103,15 @@ class Parser {
                 this.expect('SEMICOLON', 'Expected semicolon after export');
                 break;
             } else {
-                this.error('Expected import, use, or export', token);
+                // Pozwól na luźne wyrażenia (nieużywane wartości) - parsuj i ignoruj
+                try {
+                    this.parseValue();
+                    this.expect('SEMICOLON', 'Expected semicolon after expression');
+                    // Wyrażenie zostanie zignorowane - nie dodajemy do AST
+                } catch (e) {
+                    // Jeśli nie da się sparsować jako wartość, to prawdziwy błąd
+                    this.error('Expected import, class, use, export, or valid expression', token);
+                }
             }
         }
 
@@ -355,10 +366,23 @@ class Parser {
 
         // Identifier
         if (token.type === 'IDENTIFIER') {
+            const name = token.value;
             this.next();
+            
+            // Sprawdź czy po identyfikatorze jest [ - może to instancja klasy
+            if (this.check('LBRACKET')) {
+                const obj = this.parseObject();
+                return {
+                    type: 'ClassInstance',
+                    className: name,
+                    value: obj,
+                    token
+                };
+            }
+            
             return {
                 type: 'Identifier',
-                name: token.value,
+                name: name,
                 token
             };
         }
@@ -555,6 +579,202 @@ class Parser {
 
         const [, pattern, flags] = match;
         return new RegExp(pattern, flags);
+    }
+
+    /**
+     * Parsuje definicję klasy
+     */
+    parseClass() {
+        this.expect('CLASS');
+        
+        const nameToken = this.expect('IDENTIFIER', 'Expected class name');
+        const className = nameToken.value;
+        
+        // Dziedziczenie lub kompozycja
+        let baseClass = null;
+        let mixins = [];
+        
+        if (this.check('EXTENDS')) {
+            this.next();
+            const baseToken = this.expect('IDENTIFIER', 'Expected base class name');
+            baseClass = baseToken.value;
+        }
+        
+        if (this.check('INCLUDES')) {
+            this.next();
+            const mixinToken = this.expect('IDENTIFIER', 'Expected mixin class name');
+            mixins.push(mixinToken.value);
+            
+            // Możliwa lista mixinów
+            while (this.check('IDENTIFIER')) {
+                mixins.push(this.next().value);
+            }
+        }
+        
+        // Parsuj ciało klasy [...]
+        this.expect('LBRACKET', 'Expected [ to start class body');
+        
+        const fields = [];
+        
+        while (this.hasNext() && !this.check('RBRACKET')) {
+            const field = this.parseClassField();
+            fields.push(field);
+        }
+        
+        this.expect('RBRACKET', 'Expected ] to end class body');
+        this.expect('SEMICOLON', 'Expected semicolon after class');
+        
+        return {
+            type: 'ClassDeclaration',
+            name: className,
+            baseClass,
+            mixins,
+            fields
+        };
+    }
+
+    /**
+     * Parsuje pole klasy
+     */
+    parseClassField() {
+        const keyToken = this.expect('ASSOC_KEY', 'Expected @key in class field');
+        const fieldName = keyToken.value.substring(1); // usuń @
+        
+        // Opcjonalne pole?
+        let isOptional = false;
+        if (this.check('QUESTION')) {
+            this.next();
+            isOptional = true;
+        }
+        
+        this.expect('COLON', 'Expected : after field name');
+        
+        // Parsuj typ
+        const fieldType = this.parseType();
+        
+        // Wartość domyślna
+        let defaultValue = null;
+        if (this.check('EQUALS')) {
+            this.next();
+            defaultValue = this.parseValue();
+        }
+        
+        this.expect('SEMICOLON', 'Expected semicolon after field');
+        
+        return {
+            type: 'ClassField',
+            name: fieldName,
+            fieldType,
+            isOptional,
+            defaultValue
+        };
+    }
+
+    /**
+     * Parsuje typ pola
+     */
+    parseType() {
+        const token = this.current();
+        
+        // Typy prymitywne
+        if (token.type === 'IDENTIFIER') {
+            const typeName = token.value;
+            this.next();
+            
+            // Obsługa generic types <T>
+            if (this.check('LBRACKET')) {
+                // Dla uproszczenia nie implementujemy jeszcze generics
+            }
+            
+            return {
+                type: 'TypeReference',
+                name: typeName
+            };
+        }
+        
+        // Typ tablicowy [type1, type2, ...] lub typ obiektowy
+        if (token.type === 'LBRACKET') {
+            this.next();
+            
+            // Sprawdź czy to struktura obiektowa (ma @key) czy tablica/tuple
+            if (this.check('ASSOC_KEY')) {
+                const fields = [];
+                
+                while (this.hasNext() && !this.check('RBRACKET')) {
+                    const keyToken = this.expect('ASSOC_KEY', 'Expected @key');
+                    const fieldName = keyToken.value.substring(1);
+                    
+                    let isOptional = false;
+                    if (this.check('QUESTION')) {
+                        this.next();
+                        isOptional = true;
+                    }
+                    
+                    this.expect('COLON');
+                    const fieldType = this.parseType();
+                    
+                    let defaultValue = null;
+                    if (this.check('EQUALS')) {
+                        this.next();
+                        defaultValue = this.parseValue();
+                    }
+                    
+                    this.expect('SEMICOLON');
+                    
+                    fields.push({
+                        name: fieldName,
+                        fieldType,
+                        isOptional,
+                        defaultValue
+                    });
+                }
+                
+                this.expect('RBRACKET');
+                
+                return {
+                    type: 'ObjectType',
+                    fields
+                };
+            }
+            
+            // W przeciwnym razie to tuple lub array
+            const elementTypes = [];
+            let isTuple = false;
+            
+            while (this.hasNext() && !this.check('RBRACKET')) {
+                const elemType = this.parseType();
+                elementTypes.push(elemType);
+                
+                if (this.check('SEMICOLON')) {
+                    this.next();
+                    isTuple = true;
+                } else if (!this.check('RBRACKET')) {
+                    this.error('Expected ; or ] in type definition');
+                }
+            }
+            
+            this.expect('RBRACKET');
+            
+            return {
+                type: isTuple ? 'TupleType' : 'ArrayType',
+                elementTypes
+            };
+        }
+        
+        // Typ enum (lista stringów)
+        if (token.type === 'STRING') {
+            const values = [token.value.slice(1, -1)]; // usuń cudzysłowy
+            this.next();
+            
+            // Jeśli nie ma przecinka, to pojedynczy string literal type
+            return {
+                type: 'LiteralType',
+                value: values[0],
+                literalType: 'string'
+            };
+        }
+        
+        this.error('Expected type', token);
     }
 }
 

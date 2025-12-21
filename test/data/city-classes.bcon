@@ -1,0 +1,44 @@
+# Przykład użycia klas w BCON
+
+# Definicja klasy bazowej
+class City [
+    @name: String;
+    @population: Number;
+    @founded?: Date;
+    @coordinates: [
+        @lat: Number;
+        @lon: Number;
+    ];
+];
+
+# Klasa dziedzicząca
+class CapitalCity extends City [
+    @parliament: String;
+    @isCapital: Boolean = True;
+];
+
+# Tworzenie instancji
+use City [
+    @name => "Zgierz";
+    @population => 55000;
+    @coordinates => [
+        @lat => 51.8561;
+        @lon => 19.4056;
+    ];
+] as zgierz;
+
+use CapitalCity [
+    @name => "Warsaw";
+    @population => 1720000;
+    @founded => "01-01-1283".date;
+    @coordinates => [
+        @lat => 52.2297;
+        @lon => 21.0122;
+    ];
+    @parliament => "Sejm";
+] as warsaw;
+
+export [
+    @zgierz => zgierz;
+    @warsaw => warsaw;
+];

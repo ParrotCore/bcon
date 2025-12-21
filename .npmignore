@@ -3,6 +3,7 @@
 .gitignore
 .vscode
 .github
+analysis.js
 
 # Test files (optional - remove these lines if you want to include tests)
 # test/

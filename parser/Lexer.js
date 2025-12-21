@@ -96,6 +96,9 @@ class Lexer {
             { type: 'FROM', pattern: /\bfrom\b/g },
             { type: 'AS', pattern: /\bas\b/g },
             { type: 'SKIP', pattern: /\bskip\b/g },
+            { type: 'CLASS', pattern: /\bclass\b/g },
+            { type: 'EXTENDS', pattern: /\bextends\b/g },
+            { type: 'INCLUDES', pattern: /\bincludes\b/g },
             
             // Symbole
             { type: 'ARROW', pattern: /=>/g },
@@ -109,7 +112,10 @@ class Lexer {
             // Pozostałe symbole
             { type: 'LBRACKET', pattern: /\[/g },
             { type: 'RBRACKET', pattern: /\]/g },
-            { type: 'SEMICOLON', pattern: /;/g }
+            { type: 'SEMICOLON', pattern: /;/g },
+            { type: 'COLON', pattern: /:/g },
+            { type: 'QUESTION', pattern: /\?/g },
+            { type: 'EQUALS', pattern: /=/g }
         ];
     }
 

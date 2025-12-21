@@ -21,6 +21,7 @@
 
 Unlike traditional configuration formats, BCON provides:
 - **Rich type system** with native support for dates, regular expressions, and files
+- **Classes with validation** for structured data schemas and type checking
 - **Variable system** with imports and references
 - **String interpolation** for dynamic values
 - **Destructuring** for elegant data extraction
@@ -39,6 +40,7 @@ BCON is perfect for application configuration files, build systems, deployment s
 - 📦 **Module system** - Import and reuse configurations from other files
 - 🔗 **Variable references** - Access nested data with dot notation
 - 🎯 **Destructuring** - Extract specific values elegantly
+- 🏗️ **Classes with validation** - Define schemas with type checking and inheritance
 - 🚫 **No arithmetic** - Purely declarative, focused on value definitions
 - 🎨 **VS Code support** - Syntax highlighting extension available
 
@@ -217,8 +219,6 @@ BCON.init({
 
 ```javascript
 import BCON from 'bcon-parser';
-```javascript
-import BCON from 'bcon-parser';
 // Or: import { parse, stringify, init } from 'bcon-parser';
 
 BCON.init({
@@ -269,6 +269,7 @@ console.log(config.appName); // "My Application"
    - [Imports](#imports)
    - [Destructuring](#destructuring)
    - [References](#references)
+   - [Classes](#classes)
    - [Export Statement](#export-statement)
 2. [API Reference](#api-reference)
 3. [Examples](#examples)
@@ -812,6 +813,211 @@ export [
     ];
     @greeting => "Welcome, [Main.user.name]!";
 ];
+```
+
+## Classes
+
+**NEW in BCON 2.1:** Define reusable schemas with type validation and inheritance.
+
+### Why Classes?
+
+Classes in BCON provide:
+- **Type safety** - Validate data structure at parse time
+- **Documentation** - Self-documenting schemas
+- **Reusability** - Define once, use many times
+- **Inheritance** - Extend and compose schemas
+- **Default values** - Reduce repetition
+
+### Basic Class Definition
+
+```bcon
+class Person [
+    @name: String;
+    @age: Number;
+    @email?: String;  # Optional field
+];
+
+use Person [
+    @name => "Alice";
+    @age => 30;
+] as alice;
+
+export alice;
+# Result: { name: "Alice", age: 30 }
+```
+
+### Field Types
+
+**Primitive types:**
+- `String`, `Number`, `Boolean`, `BigInt`
+- `Date`, `RegExp`
+- `Array`, `Object`
+- `Null`, `Undefined`, `Any`
+
+**Nested object types:**
+
+```bcon
+class Address [
+    @street: String;
+    @city: String;
+    @coordinates: [
+        @lat: Number;
+        @lon: Number;
+    ];
+];
+```
+
+**Array types:**
+
+```bcon
+class Team [
+    @name: String;
+    @members: Array;  # Array of any elements
+];
+```
+
+### Optional Fields
+
+Mark fields as optional with `?`:
+
+```bcon
+class User [
+    @username: String;
+    @email?: String;      # Optional
+    @phone?: String;      # Optional
+];
+```
+
+### Default Values
+
+Provide default values with `=`:
+
+```bcon
+class Config [
+    @host: String = "localhost";
+    @port: Number = 8080;
+    @debug: Boolean = False;
+];
+
+use Config [
+    @host => "example.com";
+    # port and debug will use defaults
+] as config;
+# Result: { host: "example.com", port: 8080, debug: false }
+```
+
+### Class Inheritance
+
+Extend classes to add or override fields:
+
+```bcon
+class Animal [
+    @name: String;
+    @age: Number;
+];
+
+class Dog extends Animal [
+    @breed: String;
+    @goodBoy: Boolean = True;
+];
+
+use Dog [
+    @name => "Buddy";
+    @age => 5;
+    @breed => "Golden Retriever";
+] as buddy;
+# Result: { name: "Buddy", age: 5, breed: "Golden Retriever", goodBoy: true }
+```
+
+### Nested Class Instances
+
+Use class instances as field values:
+
+```bcon
+class Coordinates [
+    @lat: Number;
+    @lon: Number;
+];
+
+class City [
+    @name: String;
+    @location: Coordinates;  # Type reference
+];
+
+use City [
+    @name => "Warsaw";
+    @location => Coordinates [
+        @lat => 52.2297;
+        @lon => 21.0122;
+    ];
+] as warsaw;
+```
+
+### Type Validation
+
+Classes validate types at parse time:
+
+```bcon
+class Product [
+    @name: String;
+    @price: Number;
+];
+
+use Product [
+    @name => "Book";
+    @price => "free";  # ERROR! Type mismatch: expected Number, got string
+] as product;
+```
+
+### Required Fields
+
+Fields without `?` are required:
+
+```bcon
+class Book [
+    @title: String;
+    @author: String;
+    @year?: Number;
+];
+
+use Book [
+    @title => "1984";
+    # ERROR! Missing required field "author"
+] as book;
+```
+
+### Real-World Example
+
+```bcon
+# Define schemas
+class Address [
+    @street: String;
+    @city: String;
+    @country: String;
+    @zipCode?: String;
+];
+
+class Company [
+    @name: String;
+    @founded: Date;
+    @employees: Number;
+    @headquarters: Address;
+];
+
+# Create instance with validation
+use Company [
+    @name => "TechCorp";
+    @founded => "01-01-2020".date;
+    @employees => 150;
+    @headquarters => Address [
+        @street => "123 Innovation Ave";
+        @city => "San Francisco";
+        @country => "USA";
+        @zipCode => "94105";
+    ];
+] as company;
+
+export company;
 ```
 
 ## Export Statement

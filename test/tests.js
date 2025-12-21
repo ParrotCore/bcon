@@ -48,83 +48,58 @@ function runTests() {
 // ==============================================
 // Basic Data Types Tests
 // ==============================================
+function createParsingTestCase({ testName: TEST_NAME, literal: LITERAL, expected: EXPECTATION, customAssertion: custom_assert })
+{
+	test(`Parse ${TEST_NAME}`, () => {
+		const result = BCON.parse(`export ${LITERAL};`);
+		if (custom_assert) custom_assert(result, EXPECTATION);
+		else assert.strictEqual(result, EXPECTATION);
+	});
+}
 
-test('Parse string', () => {
-	const result = BCON.parse('export "Hello, World!";');
-	assert.strictEqual(result, "Hello, World!");
-});
+function NaNAssertion(val)
+{
+	assert(isNaN(val));
+}
 
-test('Parse number', () => {
-	const result = BCON.parse('export 42;');
-	assert.strictEqual(result, 42);
-});
+function RegExpAssertion(val, exp)
+{
+	assert(val instanceof RegExp);
+	assert.strictEqual(val.source, exp.source);
+	assert.strictEqual(val.flags, exp.flags);
+}
 
-test('Parse float', () => {
-	const result = BCON.parse('export 3.14159;');
-	assert.strictEqual(result, 3.14159);
-});
-
-test('Parse boolean True', () => {
-	const result = BCON.parse('export True;');
-	assert.strictEqual(result, true);
-});
-
-test('Parse boolean False', () => {
-	const result = BCON.parse('export False;');
-	assert.strictEqual(result, false);
-});
-
-test('Parse Null', () => {
-	const result = BCON.parse('export Null;');
-	assert.strictEqual(result, null);
-});
-
-test('Parse Undefined', () => {
-	const result = BCON.parse('export Undefined;');
-	assert.strictEqual(result, undefined);
-});
-
-test('Parse BigInt', () => {
-	const result = BCON.parse('export 9007199254740991n;');
-	assert.strictEqual(result, 9007199254740991n);
-});
-
-test('Parse hex number', () => {
-	const result = BCON.parse('export 0xFF00CC;');
-	assert.strictEqual(result, 0xFF00CC);
-});
-
-test('Parse octal number', () => {
-	const result = BCON.parse('export 0o755;');
-	assert.strictEqual(result, 0o755);
-});
-
-test('Parse binary number', () => {
-	const result = BCON.parse('export 0b1010;');
-	assert.strictEqual(result, 0b1010);
-});
-
-test('Parse scientific notation', () => {
-	const result = BCON.parse('export 1e+6;');
-	assert.strictEqual(result, 1e+6);
-});
-
-test('Parse Infinity', () => {
-	const result = BCON.parse('export Infinity;');
-	assert.strictEqual(result, Infinity);
-});
-
-test('Parse NaN', () => {
-	const result = BCON.parse('export NaN;');
-	assert(isNaN(result));
-});
-
-test('Parse RegExp', () => {
-	const result = BCON.parse('export /^test$/i;');
-	assert(result instanceof RegExp);
-	assert.strictEqual(result.source, '^test$');
-	assert.strictEqual(result.flags, 'i');
-});
+[
+	{ testName: 'String', literal: '"Hello, World!"', expected: "Hello, World!" },
+	{ testName: 'Number', literal: '42', expected: 42 },
+	{ testName: 'Float', literal: '3.14159', expected: 3.14159 },
+	{ testName: 'Boolean True', literal: 'True', expected: true },
+	{ testName: 'Boolean False', literal: 'False', expected: false },
+	{ testName: 'Null', literal: 'Null', expected: null },
+	{ testName: 'Undefined', literal: 'Undefined', expected: undefined },
+	{ testName: 'BigInt', literal: '9007199254740991n', expected: 9007199254740991n },
+	{ testName: 'Hex Number', literal: '0xFF00CC', expected: 0xFF00CC },
+	{ testName: 'Octal Number', literal: '0o755', expected: 0o755 },
+	{ testName: 'Binary Number', literal: '0b1010', expected: 0b1010 },
+	{ testName: 'Scientific Notation', literal: '1e+6', expected: 1e+6 },
+	{ testName: 'Infinity', literal: 'Infinity', expected: Infinity },
+	{ testName: 'NaN', literal: 'NaN', expected: NaN, customAssertion: NaNAssertion },
+	{ testName: 'RegExp', literal: '/^test$/i', expected: /^test$/i, customAssertion: RegExpAssertion }
+]
+	.map(el => {
+		return test(`Parse ${el.testName}`, () => {
+			const result = BCON.parse(`export ${el.literal};`);
+			if (el.testName === 'NaN') {
+				assert(isNaN(result));
+			} else if (el.testName === 'RegExp') {
+				assert(result instanceof RegExp);
+				assert.strictEqual(result.source, el.expected.source);
+				assert.strictEqual(result.flags, el.expected.flags);
+			} else {
+				assert.strictEqual(result, el.expected);
+			}
+		});
+	});
 
 // ==============================================
 // Variables Tests
@@ -607,6 +582,422 @@ test('Error: Invalid syntax', () => {
 	} catch (error) {
 		assert(error instanceof Error);
 	}
+});
+
+// ==============================================
+// Class System Tests
+// ==============================================
+
+test('Class: Basic class definition', () => {
+	const code = `
+		class Person [
+			@name: String;
+			@age: Number;
+		];
+
+		use Person [
+			@name => "John";
+			@age => 30;
+		] as john;
+
+		export john;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "John");
+	assert.strictEqual(result.age, 30);
+});
+
+test('Class: Optional fields', () => {
+	const code = `
+		class User [
+			@username: String;
+			@email?: String;
+		];
+
+		use User [
+			@username => "alice";
+		] as alice;
+
+		export alice;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.username, "alice");
+	assert.strictEqual(result.email, undefined);
+});
+
+test('Class: Default values', () => {
+	const code = `
+		class Config [
+			@host: String = "localhost";
+			@port: Number = 8080;
+		];
+
+		use Config [
+			@host => "example.com";
+		] as config;
+
+		export config;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.host, "example.com");
+	assert.strictEqual(result.port, 8080);
+});
+
+test('Class: Type validation - should fail', () => {
+	const code = `
+		class Product [
+			@name: String;
+			@price: Number;
+		];
+
+		use Product [
+			@name => "Book";
+			@price => "free";
+		] as product;
+
+		export product;
+	`;
+	
+	try {
+		BCON.parse(code);
+		assert.fail('Should have thrown type error');
+	} catch (e) {
+		assert(e.message.includes('Type mismatch') || e.message.includes('expected Number'));
+	}
+});
+
+test('Class: Missing required field - should fail', () => {
+	const code = `
+		class Book [
+			@title: String;
+			@author: String;
+		];
+
+		use Book [
+			@title => "1984";
+		] as book;
+
+		export book;
+	`;
+	
+	try {
+		BCON.parse(code);
+		assert.fail('Should have thrown missing field error');
+	} catch (e) {
+		assert(e.message.includes('Missing required field'));
+	}
+});
+
+test('Class: Inheritance', () => {
+	const code = `
+		class Animal [
+			@name: String;
+			@age: Number;
+		];
+
+		class Dog extends Animal [
+			@breed: String;
+		];
+
+		use Dog [
+			@name => "Buddy";
+			@age => 5;
+			@breed => "Golden Retriever";
+		] as buddy;
+
+		export buddy;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "Buddy");
+	assert.strictEqual(result.age, 5);
+	assert.strictEqual(result.breed, "Golden Retriever");
+});
+
+test('Class: Nested object types', () => {
+	const code = `
+		class Address [
+			@street: String;
+			@city: String;
+			@coordinates: [
+				@lat: Number;
+				@lon: Number;
+			];
+		];
+
+		use Address [
+			@street => "Main St";
+			@city => "Springfield";
+			@coordinates => [
+				@lat => 42.1234;
+				@lon => -71.5678;
+			];
+		] as address;
+
+		export address;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.street, "Main St");
+	assert.strictEqual(result.coordinates.lat, 42.1234);
+});
+
+test('Class: Array types', () => {
+	const code = `
+		class Team [
+			@name: String;
+			@members: Array;
+		];
+
+		use Team [
+			@name => "Dev Team";
+			@members => [
+				@* => "Alice";
+				@* => "Bob";
+				@* => "Charlie";
+			];
+		] as team;
+
+		export team;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "Dev Team");
+	assert.strictEqual(result.members.length, 3);
+	assert.strictEqual(result.members[0], "Alice");
+});
+
+test('Class: Extra fields - should fail', () => {
+	const code = `
+		class Simple [
+			@name: String;
+		];
+
+		use Simple [
+			@name => "Test";
+			@extra => "Field";
+		] as obj;
+
+		export obj;
+	`;
+	
+	try {
+		BCON.parse(code);
+		assert.fail('Should have thrown unknown fields error');
+	} catch (e) {
+		assert(e.message.includes('Unknown fields'));
+	}
+});
+
+test('Class: Class name as type reference', () => {
+	const code = `
+		class Point [
+			@x: Number;
+			@y: Number;
+		];
+
+		class Rectangle [
+			@topLeft: Point;
+			@bottomRight: Point;
+		];
+
+		use Rectangle [
+			@topLeft => Point [
+				@x => 0;
+				@y => 100;
+			];
+			@bottomRight => Point [
+				@x => 100;
+				@y => 0;
+			];
+		] as rect;
+
+		export rect;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.topLeft.x, 0);
+	assert.strictEqual(result.bottomRight.y, 0);
+});
+
+test('Class: Deep nested validation', () => {
+	const code = `
+		class Contact [
+			@email: String;
+			@phone: String;
+		];
+
+		class Address [
+			@street: String;
+			@city: String;
+			@contact: Contact;
+		];
+
+		class Company [
+			@name: String;
+			@headquarters: Address;
+		];
+
+		use Company [
+			@name => "TechCorp";
+			@headquarters => Address [
+				@street => "123 Tech Ave";
+				@city => "San Francisco";
+				@contact => Contact [
+					@email => "info@techcorp.com";
+					@phone => "+1-555-0123";
+				];
+			];
+		] as company;
+
+		export company;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.name, "TechCorp");
+	assert.strictEqual(result.headquarters.city, "San Francisco");
+	assert.strictEqual(result.headquarters.contact.email, "info@techcorp.com");
+});
+
+test('Class: Deep type error detection', () => {
+	const code = `
+		class GPS [
+			@lat: Number;
+			@lon: Number;
+		];
+
+		class Location [
+			@name: String;
+			@coords: GPS;
+		];
+
+		use Location [
+			@name => "Office";
+			@coords => GPS [
+				@lat => 52.25;
+				@lon => "invalid";
+			];
+		] as location;
+
+		export location;
+	`;
+	
+	try {
+		BCON.parse(code);
+		assert.fail('Should have caught type error in nested structure');
+	} catch (e) {
+		assert(e.message.includes('lon') && e.message.includes('Type mismatch'));
+	}
+});
+
+test('Class: Validates plain objects against class types', () => {
+	const code = `
+		class Validated [
+			@x: Number;
+		];
+
+		class Container [
+			@validated: Validated;
+		];
+
+		use Container [
+			@validated => [
+				@x => "not a number";
+			];
+		] as container;
+
+		export container;
+	`;
+	
+	try {
+		BCON.parse(code);
+		assert.fail('Should validate even plain objects when field type is a class');
+	} catch (e) {
+		assert(e.message.includes('Type mismatch'));
+	}
+});
+
+// ==============================================
+// Loose Expressions Tests
+// ==============================================
+
+test('Allow unused literals: number', () => {
+	const code = `
+		1;
+		42;
+		3.14;
+		
+		use "test" as value;
+		export value;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "test");
+});
+
+test('Allow unused literals: strings', () => {
+	const code = `
+		"ignored string";
+		"another one";
+		
+		export "result";
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "result");
+});
+
+test('Allow unused literals: objects and arrays', () => {
+	const code = `
+		[@* => 1; @* => 2; @* => 3;];
+		[@x => 10; @y => 20;];
+		
+		use "data" as val;
+		export val;
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "data");
+});
+
+test('Allow unused literals: mixed types', () => {
+	const code = `
+		# These are all ignored
+		42;
+		"string";
+		True;
+		False;
+		Null;
+		[@* => 1; @* => 2; @* => 3;];
+		[@a => 1;];
+		
+		export "final";
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result, "final");
+});
+
+test('Unused expressions between declarations', () => {
+	const code = `
+		use 10 as x;
+		
+		999;
+		"random string";
+		
+		use 20 as y;
+		
+		[@* => 1; @* => 2; @* => 3;];
+		
+		export [@x => x; @y => y;];
+	`;
+	
+	const result = BCON.parse(code);
+	assert.strictEqual(result.x, 10);
+	assert.strictEqual(result.y, 20);
 });
 
 // ==============================================

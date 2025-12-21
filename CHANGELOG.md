@@ -2,7 +2,7 @@
 
 All notable changes to bcon-parser will be documented in this file.
 
-## [2.1.0] - 2025-12-21
+## [2.2.0] - 2025-12-21
 
 ### Added
 - **Class System with Type Validation** 🎉

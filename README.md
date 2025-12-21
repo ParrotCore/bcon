@@ -22,9 +22,9 @@
 Unlike traditional configuration formats, BCON provides:
 - **Rich type system** with native support for dates, regular expressions, and files
 - **Classes with validation** for structured data schemas and type checking
-- **Class constructors with parameters** for dynamic object initialization (NEW in 2.2)
-- **Nullish coalescing operator (`?`)** for elegant default values (NEW in 2.2)
-- **Spread operator (`...`)** for flexible array handling (NEW in 2.2)
+- **Class constructors with parameters** for dynamic object initialization (NEW in 2.3)
+- **Nullish coalescing operator (`?`)** for elegant default values (NEW in 2.3)
+- **Spread operator (`...`)** for flexible array handling (NEW in 2.3)
 - **Variable system** with imports and references
 - **String interpolation** for dynamic values
 - **Destructuring** for elegant data extraction
@@ -44,9 +44,9 @@ BCON is perfect for application configuration files, build systems, deployment s
 - 🔗 **Variable references** - Access nested data with dot notation
 - 🎯 **Destructuring** - Extract specific values elegantly
 - 🏗️ **Classes with validation** - Define schemas with type checking and inheritance
-- 🎨 **Class constructors** - Dynamic initialization with parameters (NEW in 2.2)
-- ❓ **Nullish coalescing** - `?` operator for default values (NEW in 2.2)
-- 📤 **Spread operator** - `...` for collecting and spreading arrays (NEW in 2.2)
+- 🎨 **Class constructors** - Dynamic initialization with parameters (NEW in 2.3)
+- ❓ **Nullish coalescing** - `?` operator for default values (NEW in 2.3)
+- 📤 **Spread operator** - `...` for collecting and spreading arrays (NEW in 2.3)
 - 🚫 **No arithmetic** - Purely declarative, focused on value definitions
 - 🎨 **VS Code support** - Syntax highlighting extension available
 
@@ -1028,7 +1028,7 @@ export company;
 
 ### Class Constructors with Parameters
 
-**NEW in BCON 2.2:** Define classes with constructor parameters for dynamic initialization.
+**NEW in BCON 2.3:** Define classes with constructor parameters for dynamic initialization.
 
 #### Constructor Syntax
 

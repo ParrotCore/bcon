@@ -2,7 +2,7 @@
 
 All notable changes to bcon-parser will be documented in this file.
 
-## [2.2.0] - 2025-12-21
+## [2.3.0] - 2025-12-21
 
 ### Added
 - **Class Constructors with Parameters** 🎉
@@ -107,7 +107,7 @@ All notable changes to bcon-parser will be documented in this file.
 
 - **Documentation Updates**
   - Updated `test/README.md` with comprehensive documentation
-  - Added examples for all BCON 2.2+ features
+  - Added examples for all BCON 2.3+ features
   - Removed references to deprecated test files
   - Added troubleshooting section for common issues
 

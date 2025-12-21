@@ -55,7 +55,7 @@ node test/comparison.js
 - Nullish coalescing operator with types
 
 ### `test-nested-constructors.js` - Nested Constructor Tests
-**5 tests** for advanced constructor features (BCON 2.2+):
+**5 tests** for advanced constructor features (BCON 2.3+):
 - Constructor calls in default values
 - Constructor calls as arguments
 - Validators as default values
@@ -63,7 +63,7 @@ node test/comparison.js
 - Deep nested constructor hierarchies
 
 ### `test-spread-objects.js` - Spread Operator Tests
-**6 tests** for spread operator functionality (BCON 2.2+):
+**6 tests** for spread operator functionality (BCON 2.3+):
 - Spread in objects (merging multiple objects)
 - Spread in arrays (combining arrays)
 - Key overwriting behavior
@@ -131,10 +131,10 @@ This single file replaces 13+ previous test files and serves as:
 |------|-------|-------|
 | `tests.js` | 64 | Main features, parsing, stringification |
 | `test-type-validation.js` | 15 | Type checking, validation |
-| `test-nested-constructors.js` | 5 | Advanced constructors (BCON 2.2+) |
-| `test-spread-objects.js` | 6 | Spread operator (BCON 2.2+) |
+| `test-nested-constructors.js` | 5 | Advanced constructors (BCON 2.3+) |
+| `test-spread-objects.js` | 6 | Spread operator (BCON 2.3+) |
 
-### BCON 2.2 New Features
+### BCON 2.3 New Features
 
 #### ✨ Constructor Calls in Default Values
 ```bcon
@@ -526,9 +526,9 @@ printBenchmark(benchmark);
 - ✅ References (Main, This, dot notation)
 - ✅ Destructuring (objects and arrays)
 - ✅ Classes (validators and constructors)
-- ✅ Constructor calls in default values (BCON 2.2+)
-- ✅ Constructor calls as arguments (BCON 2.2+)
-- ✅ Spread operator for arrays and objects (BCON 2.2+)
+- ✅ Constructor calls in default values (BCON 2.3+)
+- ✅ Constructor calls as arguments (BCON 2.3+)
+- ✅ Spread operator for arrays and objects (BCON 2.3+)
 - ✅ Nullish coalescing operator (?)
 - ✅ Type validation system
 - ✅ Inheritance (extends)
@@ -594,7 +594,7 @@ try {
 ## 🔗 Links
 
 - **BCON Language**: Declarative configuration language
-- **Version**: 2.2.0 with spread operator and nested constructors
+- **Version**: 2.3.0 with spread operator and nested constructors
 - **License**: MIT
 
 ## 📝 License
@@ -605,4 +605,4 @@ MIT License - see [LICENSE](../LICENSE) file for details.
 
 **Last Updated**: December 21, 2025  
 **Test Status**: ✅ 90/90 tests passing  
-**BCON Version**: 2.2.0
+**BCON Version**: 2.3.0
